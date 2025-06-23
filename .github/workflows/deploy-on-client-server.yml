@@ -1,0 +1,36 @@
+name: Deploy Private GitHub repository to servers
+on:
+  push:
+    branches:
+      - deploy
+      - live
+jobs:
+  deploy-to-softvence:
+    name: Deploy to Softvence server
+    if: github.ref == 'refs/heads/deploy'
+    runs-on: ubuntu-latest
+    steps:
+      -uses: actions/checkout@v2.1.0
+        with:
+          fetch-depth: 2
+      - name: Deploy to Softvence
+        uses: SamKirkland/FTP-Deploy-Action@4.3.0
+        with:
+          server: ftp.softvencefsd.xyz
+          username: softvencefsd_waleedbinsalma@waleedbinsalma.softvencefsd.xyz
+          password: ${{ secrets.FTP_PASSWORD_SOFTVENCE }}
+
+  deploy-to-client:
+    name: Deploy to client server
+    if: github.ref == 'refs/heads/live'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.1.0
+        with:
+          fetch-depth: 2
+      - name: FTP Deploy to client
+        uses: SamKirkland/FTP-Deploy-Action@4.3.0
+        with:
+          server: 
+          username: 
+          password: ${{ secrets.FTP_PASSWORD_CLIENT }}
