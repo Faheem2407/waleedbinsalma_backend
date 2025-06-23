@@ -10,7 +10,7 @@ jobs:
     if: github.ref == 'refs/heads/deploy'
     runs-on: ubuntu-latest
     steps:
-      -uses: actions/checkout@v2.1.0
+      - uses: actions/checkout@v2.1.0
         with:
           fetch-depth: 2
       - name: Deploy to Softvence
