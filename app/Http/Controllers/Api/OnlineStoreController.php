@@ -305,7 +305,7 @@ class OnlineStoreController extends Controller
                 'storeTeams.team:id,first_name',
 
                 'storeServices:id,online_store_id,service_id',
-                'storeServices.service:id,service_name'
+                'storeServices.catalogService'
             ])
                 ->select([
                     'id',
