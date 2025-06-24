@@ -293,19 +293,19 @@ class OnlineStoreController extends Controller
                 'storeImages:id,online_store_id,images',
 
                 'storeAmenities:id,online_store_id,amenity_id',
-                'storeAmenities.amenity:id,name',
+                'storeAmenities.amenity',
 
                 'storeHighlights:id,online_store_id,highlight_id',
-                'storeHighlights.highlight:id,name',
+                'storeHighlights.highlight',
 
                 'storeValues:id,online_store_id,value_id',
-                'storeValues.value:id,name',
+                'storeValues.value',
 
                 'storeTeams:id,online_store_id,team_id',
-                'storeTeams.team:id,first_name',
+                'storeTeams.team',
 
                 'storeServices:id,online_store_id,service_id',
-                'storeServices.service:id,service_name'
+                'storeServices.catalogService'
             ])
                 ->select([
                     'id',
@@ -334,8 +334,8 @@ class OnlineStoreController extends Controller
         try {
             $query = OnlineStore::with([
                 'storeImages:id,online_store_id,images',
-                'storeServices.service:id,service_name',
-                'storeServices.service.catalogService:id,service_id,duration'
+                'storeServices.service',
+                'storeServices.service.catalogService'
             ]);
 
             // if ($request->filled('address')) {
