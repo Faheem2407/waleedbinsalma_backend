@@ -20,7 +20,7 @@ class TeamController extends Controller
             ->when($query, function ($q) use ($query) {
                 $q->where(function ($subQuery) use ($query) {
                     $subQuery->where('first_name', 'like', '%' . $query . '%')
-                            ->orWhere('last_name', 'like', '%' . $query . '%');
+                        ->orWhere('last_name', 'like', '%' . $query . '%');
                 });
             })
             ->get();
@@ -61,9 +61,13 @@ class TeamController extends Controller
 
         $data = $request->except('photo', 'teamAddresses', 'teamServices');
 
+        $photo_name = null;
         if ($request->hasFile('photo')) {
-            $data['photo'] = $request->file('photo')->store('team_photos', 'public');
+            $photo_name = uploadImage($request->file('photo'), 'team_photos');
         }
+
+        $data['photo'] = $photo_name;
+
 
         $team = Team::create($data);
 
@@ -115,9 +119,12 @@ class TeamController extends Controller
 
         $data = $request->except('photo', 'teamAddresses', 'teamServices');
 
+        $photo_name = null;
         if ($request->hasFile('photo')) {
-            $data['photo'] = $request->file('photo')->store('team_photos', 'public');
+            $photo_name = uploadImage($request->file('photo'), 'team_photos');
+            $data['photo'] = $photo_name;
         }
+
 
         $team->update($data);
 
