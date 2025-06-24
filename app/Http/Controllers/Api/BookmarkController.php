@@ -22,6 +22,10 @@ class BookmarkController extends Controller
         try {
             $userId = Auth::id();
 
+            if(!$userId) {
+                return $this->error('User not found.', 404);
+            }
+
             $bookmark = StoreBookmark::firstOrCreate([
                 'user_id' => $userId,
                 'online_store_id' => $request->online_store_id,

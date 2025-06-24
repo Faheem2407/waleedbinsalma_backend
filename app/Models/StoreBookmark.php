@@ -12,4 +12,9 @@ class StoreBookmark extends Model
         'online_store_id',
         'user_id',
     ];
+
+    public function onlineStore()
+    {
+        return $this->belongsTo(OnlineStore::class);
+    }
 }

@@ -9,8 +9,9 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CustomerDashboardController;
 
 Route::prefix('online-store')->group(function () {
-    Route::post('/register', [OnlineStoreController::class, 'register']);
-    Route::post('/update/{id}',[OnlineStoreController::class,'update']);
+    Route::post('/register', [OnlineStoreController::class, 'createOrUpdate']);
+    // Route::post('/update/{id}',[OnlineStoreController::class,'update']);
+    Route::get('/details/{business_profile_id}', [OnlineStoreController::class, 'getOnlineStoreIdByBusinessProfile']);
     Route::get('/show', [OnlineStoreController::class, 'getRegister']);
 });
 

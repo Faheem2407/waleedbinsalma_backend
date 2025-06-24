@@ -17,4 +17,8 @@ class BusinessProfile extends Model
     public function businessServices(){
         return $this->hasMany(BusinessService::class);
     }
+
+    public function onlineStore(){
+        return $this->hasOne(OnlineStore::class);
+    }
 }
