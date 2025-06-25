@@ -6,15 +6,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class BusinessProfile extends Model
 {
-    protected $guarded=[];
+    protected $guarded = [];
 
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
-    public function businessDocument(){
+
+    public function businessDocument()
+    {
         return $this->hasOne(BusinessDocument::class);
     }
-    public function businessServices(){
+
+    public function businessServices()
+    {
         return $this->hasMany(BusinessService::class);
+    }
+
+    public function bankDetail()
+    {
+        return $this->hasOne(BusinessBankDetails::class);
     }
 }

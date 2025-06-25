@@ -57,7 +57,6 @@ Route::controller(LoginController::class)->prefix('users/login')->group(function
 
     //Reset Password
     Route::post('/reset-password', 'resetPassword');
-
 });
 
 Route::controller(SitesettingController::class)->group(function () {
@@ -90,8 +89,8 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::delete('/delete', 'deleteUser');
     });
 
-    Route::controller(BusinessProfileController::class)->middleware(['business','jwt.verify'])->group(function(){
-        Route::post("/create/business/profile",'store');
+    Route::controller(BusinessProfileController::class)->middleware(['business', 'jwt.verify'])->group(function () {
+        Route::post("/create/business/profile", 'store');
     });
 
     Route::controller(ChatController::class)->group(function () {

@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
-class UserController extends Controller {
+class UserController extends Controller
+{
     use ApiResponse;
 
     /**
@@ -19,11 +20,12 @@ class UserController extends Controller {
      * @return \Illuminate\Http\JsonResponse  JSON response with success or error.
      */
 
-    public function userData() {
+    public function userData()
+    {
 
         $user = User::where('id', auth()->user()->id)->first();
 
-        if($user->role == "business") {
+        if ($user->role == "business") {
             $user->businessProfile->load('businessDocument', 'businessServices');
         }
         if (!$user) {
@@ -40,7 +42,8 @@ class UserController extends Controller {
      * @return \Illuminate\Http\JsonResponse  JSON response with success or error.
      */
 
-    public function userUpdate(Request $request) {
+    public function userUpdate(Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
             'avatar'  => 'nullable|image|mimes:jpeg,png,jpg,svg|max:5120',
@@ -48,7 +51,7 @@ class UserController extends Controller {
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), "Validation Error", 422);
+            return $this->error($validator->errors(), $validator->errors()->first(), 422);
         }
 
         try {
@@ -86,13 +89,14 @@ class UserController extends Controller {
         }
     }
 
-     /**
+    /**
      * Change Login User Password
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse JSON response with success or error.
      */
-    public function passwordChange(Request $request) {
+    public function passwordChange(Request $request)
+    {
         // Get the authenticated user
         $user = auth()->user();
 
@@ -108,7 +112,7 @@ class UserController extends Controller {
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), "Validation Error", 422);
+            return $this->error($validator->errors(), $validator->errors()->first(), 422);
         }
 
         // Check if the current password matches
@@ -130,7 +134,8 @@ class UserController extends Controller {
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse JSON response with success or error.
      */
-    public function logoutUser() {
+    public function logoutUser()
+    {
 
         try {
             JWTAuth::invalidate(JWTAuth::getToken());
@@ -139,7 +144,6 @@ class UserController extends Controller {
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
-
     }
 
     /**
@@ -147,7 +151,8 @@ class UserController extends Controller {
      *
      * @return \Illuminate\Http\JsonResponse JSON response with success or error.
      */
-    public function deleteUser() {
+    public function deleteUser()
+    {
         try {
             // Get the authenticated user
             $user = auth()->user();
