@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Traits\ApiResponse;
 use App\Models\Appointment;
 use App\Models\Payment;
+use App\Models\User;
 
 class BusinessOwnerDashboardController extends Controller
 {
@@ -60,41 +61,40 @@ class BusinessOwnerDashboardController extends Controller
 			->take(20)
 			->get();
 
-		// Top services this month
 		$topServicesThisMonth = Appointment::where('online_store_id', $storeId)
-			->whereBetween('date', [$startOfMonth, now()])
-			->with('storeServices')
-			->get()
-			->flatMap->storeServices
-			->groupBy('id')
-			->map(function ($services) {
-				return [
-					'service_name' => $services->first()->name,
-					'count' => $services->count(),
-				];
-			})
-			->sortByDesc('count')
-			->values()
-			->take(5);
+		    ->whereBetween('date', [$startOfMonth, now()])
+		    ->with('storeServices.service') // eager load service relation
+		    ->get()
+		    ->flatMap->storeServices
+		    ->groupBy('id')
+		    ->map(function ($services) {
+		        return [
+		            'service_name' => optional($services->first()->service)->service_name ?? 'Unknown',
+		            'count' => $services->count(),
+		        ];
+		    })
+		    ->sortByDesc('count')
+		    ->values()
+		    ->take(5);
 
-		// Top services last month
 		$topServicesLastMonth = Appointment::where('online_store_id', $storeId)
-			->whereBetween('date', [$startOfLastMonth, $endOfLastMonth])
-			->with('storeServices')
-			->get()
-			->flatMap->storeServices
-			->groupBy('id')
-			->map(function ($services) {
-				return [
-					'service_name' => $services->first()->name,
-					'count' => $services->count(),
-				];
-			})
-			->sortByDesc('count')
-			->values()
-			->take(5);
+		    ->whereBetween('date', [$startOfLastMonth, $endOfLastMonth])
+		    ->with('storeServices.service')
+		    ->get()
+		    ->flatMap->storeServices
+		    ->groupBy('id')
+		    ->map(function ($services) {
+		        return [
+		            'service_name' => optional($services->first()->service)->service_name ?? 'Unknown',
+		            'count' => $services->count(),
+		        ];
+		    })
+		    ->sortByDesc('count')
+		    ->values()
+		    ->take(5);
 
-		return $this->success([
+
+		$data = [
 			'total_appointments' => $totalAppointments,
 			'total_price' => $totalPrice,
 			'total_confirmed' => $totalConfirmed,
@@ -105,8 +105,56 @@ class BusinessOwnerDashboardController extends Controller
 			'appointment_activities' => $appointmentActivities,
 			'top_services_this_month' => $topServicesThisMonth,
 			'top_services_last_month' => $topServicesLastMonth,
-		], 'Appointment analytics fetched successfully');
+		];
+		
+		return $this->success($data, 'Appointment analytics fetched successfully',200);
 	}
+
+
+	public function clientAnalytics(Request $request)
+	{
+	    $storeId = $request->input('online_store_id');
+
+	    if (!$storeId) {
+	        return $this->error([], 'Online store ID is required.', 422);
+	    }
+
+	    $clients = User::whereHas('appointments', function ($query) use ($storeId) {
+	            $query->where('online_store_id', $storeId);
+	        })
+	        ->with(['appointments' => function ($query) use ($storeId) {
+	            $query->where('online_store_id', $storeId)
+	                  ->with('payments');
+	        }])
+	        ->get()
+	        ->map(function ($user) {
+	            $appointments = $user->appointments;
+
+	            $totalAppointments = $appointments->count();
+	            $totalConfirmed = $appointments->where('status', 'confirmed')->count();
+	            $totalCanceled = $appointments->where('status', 'canceled')->count();
+
+	            $totalSpent = $appointments->flatMap->payments
+	                ->where('status', 'succeeded')
+	                ->sum('amount');
+
+	            return [
+	                'client_id' => $user->id,
+	                'name' => $user->first_name.' '.$user->last_name,
+	                'email' => $user->email,
+	                'phone' => $user->number,
+	                'total_appointments' => $totalAppointments,
+	                'total_confirmed' => $totalConfirmed,
+	                'total_canceled' => $totalCanceled,
+	                'total_spent' => $totalSpent,
+	            ];
+	        })
+	        ->sortByDesc('total_spent')
+	        ->values();
+
+	    return $this->success($clients, 'Client analytics fetched successfully', 200);
+	}
+
 
 
 }

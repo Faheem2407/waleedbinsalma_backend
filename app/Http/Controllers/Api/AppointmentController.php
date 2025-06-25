@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Stripe\Stripe;
 use Stripe\Charge;
+use App\Models\StoreService;
 use Illuminate\Support\Facades\Cache;
 use Stripe\PaymentIntent;
 
@@ -29,7 +30,7 @@ class AppointmentController extends Controller
             'time' => 'required|date_format:H:i',
             'booking_notes' => 'required|string',
             'store_service_ids' => 'required|array|min:1',
-            'store_service_ids.*' => 'exists:store_services,service_id',
+            'store_service_ids.*' => 'exists:store_services,id',
             'stripe_token' => 'required|string',
         ]);
 
@@ -38,18 +39,19 @@ class AppointmentController extends Controller
         try {
             $userId = Auth::id();
             if (!$userId) {
-                return $this->error('User not authenticated.', 401);
+                return $this->error([], 'User not authenticated.', 401);
             }
 
-            // Calculate total price
-            $services = CatalogService::whereIn('service_id', $request->store_service_ids)->get();
-            $totalAmount = $services->sum('price');
+            $storeServices = StoreService::with('catalogService')
+                ->whereIn('id', $request->store_service_ids)
+                ->get();
+
+            $totalAmount = $storeServices->sum(fn($ss) => $ss->catalogService->price ?? 0);
 
             if ($totalAmount <= 0) {
-                return $this->error('Invalid amount for payment.', 400);
+                return $this->error([], 'Invalid amount for payment.', 400);
             }
 
-            // Initialize Stripe
             Stripe::setApiKey(config('services.stripe.secret'));
 
             $charge = Charge::create([
@@ -65,10 +67,9 @@ class AppointmentController extends Controller
 
             if ($charge->status !== 'succeeded') {
                 DB::rollBack();
-                return $this->error('Payment failed.', 402);
+                return $this->error([], 'Payment failed.', 402);
             }
 
-            // Create appointment with 'confirmed' status
             $appointment = Appointment::create([
                 'online_store_id' => $request->online_store_id,
                 'user_id' => $userId,
@@ -80,36 +81,26 @@ class AppointmentController extends Controller
                 'status' => 'confirmed',
             ]);
 
-            // Create payment linked to appointment
-            $payment = Payment::create([
+            Payment::create([
                 'user_id' => $userId,
                 'appointment_id' => $appointment->id,
                 'amount' => $totalAmount,
                 'currency' => 'usd',
                 'status' => 'succeeded',
                 'payment_method' => 'stripe',
-                'payment_intent_id' => $charge->id,  // Store Stripe charge ID here
+                'payment_intent_id' => $charge->id,
             ]);
 
-            // Attach selected services to appointment
             $appointment->storeServices()->attach($request->store_service_ids);
 
             DB::commit();
 
-            return $this->success(
-                $appointment->load('storeServices.service'),
-                'Appointment booked and payment successful.',
-                201
-            );
+            $data = $appointment->load('storeServices.service');
 
+            return $this->success($data, 'Appointment booked and payment successful.', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Failed to book appointment with payment', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'user_id' => $userId ?? null,
-            ]);
-            return $this->error('Failed to book appointment. ' . $e->getMessage(), 500);
+            return $this->error($e->getMessage(), 'Failed to book appointment.', 500);
         }
     }
 
@@ -144,10 +135,12 @@ class AppointmentController extends Controller
             ->orderByDesc('time')
             ->get();
 
-        return $this->success([
-            'upcoming_appointments' => $upcoming,
-            'previous_appointments' => $previous,
-        ], 'Appointments fetched successfully.');
+            $data = [
+                'upcoming_appointments' => $upcoming,
+                'previous_appointments' => $previous,
+            ];
+
+        return $this->success($data, 'Appointments fetched successfully.',200);
     }
 
 
@@ -164,12 +157,12 @@ class AppointmentController extends Controller
             ->first();
 
         if (!$appointment) {
-            return $this->error('Appointment not found.', 404);
+            return $this->error([],'Appointment not found.', 404);
         }
 
         // Optional: Check if already cancelled or past
         if ($appointment->status === 'cancelled') {
-            return $this->error('Cannot reschedule a cancelled appointment.', 400);
+            return $this->error([],'Cannot reschedule a cancelled appointment.', 400);
         }
 
         $appointment->update([
@@ -177,7 +170,9 @@ class AppointmentController extends Controller
             'time' => $request->time,
         ]);
 
-        return $this->success($appointment->load('storeServices.service'), 'Appointment rescheduled successfully.');
+        $data = $appointment->load('storeServices.service');
+
+        return $this->success($data, 'Appointment rescheduled successfully.',200);
     }
 
 
@@ -193,14 +188,14 @@ class AppointmentController extends Controller
         }
 
         if ($appointment->status === 'cancelled') {
-            return $this->error('Appointment already cancelled.', 400);
+            return $this->error([],'Appointment already cancelled.', 400);
         }
 
         $appointment->update([
             'status' => 'cancelled',
         ]);
 
-        return $this->success(null, 'Appointment cancelled successfully.');
+        return $this->success([], 'Appointment cancelled successfully.',200);
     }
 
 
