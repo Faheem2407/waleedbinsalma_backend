@@ -35,19 +35,6 @@ class Appointment extends Model
         return $this->belongsToMany(StoreService::class, 'appointment_services');
     }
 
-
-    // public function services()
-    // {
-    //     return $this->hasManyThrough(
-    //         Service::class,
-    //         StoreService::class,
-    //         'id',      
-    //         'id',         
-    //         'id',          
-    //         'service_id'   
-    //     )->distinct();
-    // }
-
     public function service()
     {
         return $this->belongsTo(Service::class);
