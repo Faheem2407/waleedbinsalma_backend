@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Stripe\Stripe;
 use Stripe\Charge;
+use App\Models\StoreService;
 use Illuminate\Support\Facades\Cache;
 use Stripe\PaymentIntent;
 
@@ -45,6 +46,7 @@ class AppointmentController extends Controller
             $userId = Auth::id();
             if (!$userId) {
                 return $this->error([], 'User not authenticated.', 401);
+                return $this->error([], 'User not authenticated.', 401);
             }
 
             // Calculate total price
@@ -55,6 +57,7 @@ class AppointmentController extends Controller
             $totalAmount = $services->sum('price');
 
             if ($totalAmount <= 0) {
+                return $this->error([], 'Invalid amount for payment.', 400);
                 return $this->error([], 'Invalid amount for payment.', 400);
             }
 
@@ -123,10 +126,12 @@ class AppointmentController extends Controller
             ->orderByDesc('time')
             ->get();
 
-        return $this->success([
+        $data = [
             'upcoming_appointments' => $upcoming,
             'previous_appointments' => $previous,
-        ], 'Appointments fetched successfully.');
+        ];
+
+        return $this->success($data, 'Appointments fetched successfully.', 200);
     }
 
 
@@ -143,12 +148,12 @@ class AppointmentController extends Controller
             ->first();
 
         if (!$appointment) {
-            return $this->error('Appointment not found.', 404);
+            return $this->error([], 'Appointment not found.', 404);
         }
 
         // Optional: Check if already cancelled or past
         if ($appointment->status === 'cancelled') {
-            return $this->error('Cannot reschedule a cancelled appointment.', 400);
+            return $this->error([], 'Cannot reschedule a cancelled appointment.', 400);
         }
 
         $appointment->update([
@@ -156,7 +161,9 @@ class AppointmentController extends Controller
             'time' => $request->time,
         ]);
 
-        return $this->success($appointment->load('storeServices.service'), 'Appointment rescheduled successfully.');
+        $data = $appointment->load('storeServices.service');
+
+        return $this->success($data, 'Appointment rescheduled successfully.', 200);
     }
 
 
@@ -172,13 +179,13 @@ class AppointmentController extends Controller
         }
 
         if ($appointment->status === 'cancelled') {
-            return $this->error('Appointment already cancelled.', 400);
+            return $this->error([], 'Appointment already cancelled.', 400);
         }
 
         $appointment->update([
             'status' => 'cancelled',
         ]);
 
-        return $this->success(null, 'Appointment cancelled successfully.');
+        return $this->success([], 'Appointment cancelled successfully.', 200);
     }
 }
