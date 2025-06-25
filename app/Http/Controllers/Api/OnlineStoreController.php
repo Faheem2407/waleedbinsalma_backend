@@ -14,7 +14,139 @@ class OnlineStoreController extends Controller
 {
     use ApiResponse;
 
-    public function register(Request $request)
+
+
+    // public function createOrUpdate(Request $request, $id = null)
+    // {
+    //     $request->validate([
+    //         'business_profile_id' => 'required|integer|exists:business_profiles,id',
+    //         'name' => 'required|string',
+    //         'about' => 'required|string',
+    //         'phone' => 'required|string',
+    //         'email' => 'required|email',
+    //         'address' => 'required|string',
+    //         'latitude' => 'required|string',
+    //         'longitude' => 'required|string',
+    //         'opening_hours' => 'required|array|min:1',
+    //         'opening_hours.*.day_name' => 'required|string',
+    //         'opening_hours.*.morning_start_time' => 'required|string',
+    //         'opening_hours.*.morning_end_time' => 'required|string',
+    //         'opening_hours.*.evening_start_time' => 'required|string',
+    //         'opening_hours.*.evening_end_time' => 'required|string',
+    //         'images' => 'nullable|array|min:1',
+    //         'images.*' => 'image|max:2048',
+    //         'amenities' => 'required|array|min:1',
+    //         'amenities.*' => 'required|integer|exists:amenities,id',
+    //         'highlights' => 'required|array|min:1',
+    //         'highlights.*' => 'required|integer|exists:highlights,id',
+    //         'values' => 'required|array|min:1',
+    //         'values.*' => 'required|integer|exists:values,id',
+    //         'teams' => 'nullable|array',
+    //         'teams.*' => 'nullable|integer|exists:teams,id',
+    //         'services' => 'required|array|min:1',
+    //         'services.*' => 'required|integer|exists:services,id',
+    //     ]);
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         $store = $id
+    //             ? OnlineStore::findOrFail($id)
+    //             : OnlineStore::updateOrCreate(
+    //                 ['business_profile_id' => $request->business_profile_id],
+    //                 $request->only(['name', 'about', 'phone', 'email', 'address', 'latitude', 'longitude'])
+    //             );
+
+    //         if ($id) {
+    //             $store->update($request->only(['name', 'about', 'phone', 'email', 'address', 'latitude', 'longitude']));
+    //         }
+
+    //         $store->openingHours()->delete(); 
+    //         foreach ($request->opening_hours as $oh) {
+    //             $store->openingHours()->create([
+    //                 'day_name' => $oh['day_name'],
+    //                 'morning_start_time' => $oh['morning_start_time'],
+    //                 'morning_end_time' => $oh['morning_end_time'],
+    //                 'evening_start_time' => $oh['evening_start_time'],
+    //                 'evening_end_time' => $oh['evening_end_time'],
+    //             ]);
+    //         }
+
+    //         // Images
+    //         if ($request->hasFile('images')) {
+    //             foreach ($store->storeImages as $image) {
+    //                 $imagePath = public_path($image->images);
+    //                 if (file_exists($imagePath)) {
+    //                     unlink($imagePath);
+    //                 }
+    //             }
+    //             $store->storeImages()->delete();
+
+    //             $images = [];
+    //             foreach ($request->file('images') as $file) {
+    //                 $path = uploadImage($file, 'store_images');
+    //                 $images[] = ['images' => $path];
+    //             }
+    //             $store->storeImages()->createMany($images);
+    //         }
+
+    //         // Amenities
+    //         $store->storeAmenities()->delete();
+    //         foreach ($request->amenities as $amenity_id) {
+    //             $store->storeAmenities()->create(['amenity_id' => $amenity_id]);
+    //         }
+
+    //         // Highlights
+    //         $store->storeHighlights()->delete();
+    //         foreach ($request->highlights as $highlight_id) {
+    //             $store->storeHighlights()->create(['highlight_id' => $highlight_id]);
+    //         }
+
+    //         // Values
+    //         $store->storeValues()->delete();
+    //         foreach ($request->values as $value_id) {
+    //             $store->storeValues()->create(['value_id' => $value_id]);
+    //         }
+
+    //         // Teams
+    //         $store->storeTeams()->delete();
+    //         if ($request->filled('teams')) {
+    //             foreach ($request->teams as $team_id) {
+    //                 $store->storeTeams()->create(['team_id' => $team_id]);
+    //             }
+    //         }
+
+    //         // Services
+    //         $store->storeServices()->delete();
+    //         foreach ($request->services as $service_id) {
+    //             $store->storeServices()->create(['service_id' => $service_id]);
+    //         }
+
+    //         DB::commit();
+
+    //         $store->load([
+    //             'openingHours',
+    //             'storeImages',
+    //             'storeAmenities.amenity',
+    //             'storeHighlights.highlight',
+    //             'storeValues.value',
+    //             'storeTeams.team',
+    //             'storeServices.service',
+    //         ]);
+
+    //         $message = $id ? 'Store updated successfully.' : 'Store created successfully.';
+    //         return $this->success($store, $message, 200);
+
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return $this->error($e->getMessage(), 500);
+    //     }
+    // }
+
+
+
+
+    public function createOrUpdate(Request $request, $id = null)
     {
         $request->validate([
             'business_profile_id' => 'required|integer|exists:business_profiles,id',
@@ -25,21 +157,29 @@ class OnlineStoreController extends Controller
             'address' => 'required|string',
             'latitude' => 'required|string',
             'longitude' => 'required|string',
-            'day_name' => 'required|string',
+
+            'day_name' => 'required|array|min:1',
+            'day_name.*' => 'required|string',
             'morning_start_time' => 'required|string',
             'morning_end_time' => 'required|string',
             'evening_start_time' => 'required|string',
             'evening_end_time' => 'required|string',
-            'images' => 'required|array|min:1',
-            'images.*' => 'required|image|max:2048',
+
+            'images' => 'nullable|array|min:1',
+            'images.*' => 'image|max:2048',
+
             'amenities' => 'required|array|min:1',
             'amenities.*' => 'required|integer|exists:amenities,id',
+
             'highlights' => 'required|array|min:1',
             'highlights.*' => 'required|integer|exists:highlights,id',
+
             'values' => 'required|array|min:1',
             'values.*' => 'required|integer|exists:values,id',
-            'teams' => 'nullable|array|min:1',
+
+            'teams' => 'nullable|array',
             'teams.*' => 'nullable|integer|exists:teams,id',
+
             'services' => 'required|array|min:1',
             'services.*' => 'required|integer|exists:services,id',
         ]);
@@ -47,156 +187,28 @@ class OnlineStoreController extends Controller
         DB::beginTransaction();
 
         try {
-            $store = OnlineStore::updateOrCreate(
-                ['business_profile_id' => $request->business_profile_id],
-                [
-                    'name' => $request->name,
-                    'about' => $request->about,
-                    'phone' => $request->phone,
-                    'email' => $request->email,
-                    'address' => $request->address,
-                    'latitude' => $request->latitude,
-                    'longitude' => $request->longitude,
-                ]
-            );
+            $store = $id
+                ? OnlineStore::findOrFail($id)
+                : OnlineStore::updateOrCreate(
+                    ['business_profile_id' => $request->business_profile_id],
+                    $request->only(['name', 'about', 'phone', 'email', 'address', 'latitude', 'longitude'])
+                );
 
-            $store->openingHours()->updateOrCreate(
-                ['day_name' => $request->day_name],
-                [
+            if ($id) {
+                $store->update($request->only(['name', 'about', 'phone', 'email', 'address', 'latitude', 'longitude']));
+            }
+
+            // Opening Hours
+            $store->openingHours()->delete();
+            foreach ($request->day_name as $day) {
+                $store->openingHours()->create([
+                    'day_name' => $day,
                     'morning_start_time' => $request->morning_start_time,
                     'morning_end_time' => $request->morning_end_time,
                     'evening_start_time' => $request->evening_start_time,
                     'evening_end_time' => $request->evening_end_time,
-                ]
-            );
-
-            if ($request->hasFile('images')) {
-                foreach ($store->storeImages as $image) {
-                    $imagePath = public_path($image->images);
-                    if (file_exists($imagePath)) {
-                        unlink($imagePath);
-                    }
-                }
-                $store->storeImages()->delete();
-
-                $images = [];
-                foreach ($request->file('images') as $file) {
-                    $path = uploadImage($file, 'store_images');
-                    $images[] = ['images' => $path];
-                }
-                $store->storeImages()->createMany($images);
+                ]);
             }
-
-
-
-
-            $store->storeAmenities()->delete();
-            foreach ($request->amenities as $amenity_id) {
-                $store->storeAmenities()->create(['amenity_id' => $amenity_id]);
-            }
-
-            $store->storeHighlights()->delete();
-            foreach ($request->highlights as $highlight_id) {
-                $store->storeHighlights()->create(['highlight_id' => $highlight_id]);
-            }
-
-            $store->storeValues()->delete();
-            foreach ($request->values as $value_id) {
-                $store->storeValues()->create(['value_id' => $value_id]);
-            }
-
-            $store->storeTeams()->delete();
-            if ($request->teams) {
-                foreach ($request->teams as $team_id) {
-                    $store->storeTeams()->create(['team_id' => $team_id]);
-                }
-            }
-
-            $store->storeServices()->delete();
-            foreach ($request->services as $service_id) {
-                $store->storeServices()->create(['service_id' => $service_id]);
-            }
-
-            DB::commit();
-
-
-            $store->load([
-                'openingHours',
-                'storeImages',
-                'storeAmenities.amenity',
-                'storeHighlights.highlight',
-                'storeValues.value',
-                'storeTeams.team',
-                'storeServices.service',
-            ]);
-
-            return $this->success($store, 'Store updated successfully.', 200);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->error($e->getMessage(), 500);
-        }
-    }
-
-
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'name' => 'sometimes|required|string',
-            'about' => 'sometimes|required|string',
-            'phone' => 'sometimes|required|string',
-            'email' => 'sometimes|required|email',
-            'address' => 'sometimes|required|string',
-            'latitude' => 'sometimes|required|string',
-            'longitude' => 'sometimes|required|string',
-            'day_name' => 'sometimes|required|string',
-            'morning_start_time' => 'sometimes|required|string',
-            'morning_end_time' => 'sometimes|required|string',
-            'evening_start_time' => 'sometimes|required|string',
-            'evening_end_time' => 'sometimes|required|string',
-            'images' => 'sometimes|array|min:1',
-            'images.*' => 'sometimes|image|max:2048',
-            'amenities' => 'sometimes|array|min:1',
-            'amenities.*' => 'required_with:amenities|integer|exists:amenities,id',
-            'highlights' => 'sometimes|array|min:1',
-            'highlights.*' => 'required_with:highlights|integer|exists:highlights,id',
-            'values' => 'sometimes|array|min:1',
-            'values.*' => 'required_with:values|integer|exists:values,id',
-            'teams' => 'nullable|array|min:1',
-            'teams.*' => 'nullable|integer|exists:teams,id',
-            'services' => 'sometimes|array|min:1',
-            'services.*' => 'required_with:services|integer|exists:services,id',
-        ]);
-
-        DB::beginTransaction();
-
-        try {
-            $store = OnlineStore::findOrFail($id);
-
-            // Update only if present
-            $store->update($request->only([
-                'name',
-                'about',
-                'phone',
-                'email',
-                'address',
-                'latitude',
-                'longitude'
-            ]));
-
-            // Opening Hours
-            if ($request->has(['day_name', 'morning_start_time', 'morning_end_time', 'evening_start_time', 'evening_end_time'])) {
-                $store->openingHours()->updateOrCreate(
-                    ['day_name' => $request->day_name],
-                    [
-                        'morning_start_time' => $request->morning_start_time,
-                        'morning_end_time' => $request->morning_end_time,
-                        'evening_start_time' => $request->evening_start_time,
-                        'evening_end_time' => $request->evening_end_time,
-                    ]
-                );
-            }
-
 
             // Images
             if ($request->hasFile('images')) {
@@ -216,47 +228,36 @@ class OnlineStoreController extends Controller
                 $store->storeImages()->createMany($images);
             }
 
-
             // Amenities
-            if ($request->filled('amenities')) {
-                $store->storeAmenities()->delete();
-                foreach ($request->amenities as $amenity_id) {
-                    $store->storeAmenities()->create(['amenity_id' => $amenity_id]);
-                }
+            $store->storeAmenities()->delete();
+            foreach ($request->amenities as $amenity_id) {
+                $store->storeAmenities()->create(['amenity_id' => $amenity_id]);
             }
 
             // Highlights
-            if ($request->filled('highlights')) {
-                $store->storeHighlights()->delete();
-                foreach ($request->highlights as $highlight_id) {
-                    $store->storeHighlights()->create(['highlight_id' => $highlight_id]);
-                }
+            $store->storeHighlights()->delete();
+            foreach ($request->highlights as $highlight_id) {
+                $store->storeHighlights()->create(['highlight_id' => $highlight_id]);
             }
 
             // Values
-            if ($request->filled('values')) {
-                $store->storeValues()->delete();
-                foreach ($request->values as $value_id) {
-                    $store->storeValues()->create(['value_id' => $value_id]);
-                }
+            $store->storeValues()->delete();
+            foreach ($request->values as $value_id) {
+                $store->storeValues()->create(['value_id' => $value_id]);
             }
 
-            // Teams (nullable)
-            if ($request->has('teams')) {
-                $store->storeTeams()->delete();
-                if (!empty($request->teams)) {
-                    foreach ($request->teams as $team_id) {
-                        $store->storeTeams()->create(['team_id' => $team_id]);
-                    }
+            // Teams
+            $store->storeTeams()->delete();
+            if ($request->filled('teams')) {
+                foreach ($request->teams as $team_id) {
+                    $store->storeTeams()->create(['team_id' => $team_id]);
                 }
             }
 
             // Services
-            if ($request->filled('services')) {
-                $store->storeServices()->delete();
-                foreach ($request->services as $service_id) {
-                    $store->storeServices()->create(['service_id' => $service_id]);
-                }
+            $store->storeServices()->delete();
+            foreach ($request->services as $service_id) {
+                $store->storeServices()->create(['service_id' => $service_id]);
             }
 
             DB::commit();
@@ -271,13 +272,15 @@ class OnlineStoreController extends Controller
                 'storeServices.service',
             ]);
 
-            return $this->success($store, 'Store updated successfully.', 200);
+            $message = $id ? 'Store updated successfully.' : 'Store created successfully.';
+            return $this->success($store, $message, 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 500);
         }
     }
+
 
 
     public function getRegister(Request $request)
@@ -395,6 +398,7 @@ class OnlineStoreController extends Controller
             $radius = 10;
 
             $nearbyStores = OnlineStore::select('id', 'business_profile_id', 'name', 'address', 'latitude', 'longitude')
+                ->with('storeImages')
                 ->where('id', '!=', $store->id)
                 ->whereRaw(
                     '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) 
@@ -437,6 +441,29 @@ class OnlineStoreController extends Controller
             return $this->error([], $e->getMessage(), 500);
         }
     }
+
+
+    public function getOnlineStoreIdByBusinessProfile($businessProfileId)
+    {
+        try {
+            $store = OnlineStore::select('id')
+                ->where('business_profile_id', $businessProfileId)
+                ->first();
+
+            if (!$store) {
+                return $this->error([], 'Online store not found for this business profile.', 404);
+            }
+
+            return $this->success(['online_store_id' => $store->id], 'Online store ID fetched successfully.', 200);
+
+        } catch (\Exception $e) {
+            return $this->error([], $e->getMessage(), 500);
+        }
+    }
+
+
+
+
 
 
 

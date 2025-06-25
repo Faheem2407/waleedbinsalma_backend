@@ -27,4 +27,9 @@ class BusinessProfile extends Model
     {
         return $this->hasOne(BusinessBankDetails::class);
     }
+
+    public function onlineStore()
+    {
+        return $this->hasOne(OnlineStore::class);
+    }
 }

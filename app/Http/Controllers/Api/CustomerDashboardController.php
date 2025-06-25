@@ -95,17 +95,39 @@ class CustomerDashboardController extends Controller
         return $this->success($data, 'Address deleted successfully', 200);
     }
 
+    // public function myFavorites()
+    // {
+    //     $user = auth()->user();
+    //     if (!$user) {
+    //         return $this->error([], 'User Not Found', 404);
+    //     }
+
+    //     $data = $user->favorites()->where('user_id', $user->id)->get();
+
+    //     return $this->success($data, 'My Favorites', 200);
+    // }
+
+
     public function myFavorites()
     {
         $user = auth()->user();
         if (!$user) {
             return $this->error([], 'User Not Found', 404);
         }
-        
-        $data = $user->favorites()->where('user_id', $user->id)->get();
 
-        return $this->success($data, 'My Favorites', 200);
+        $favorites = $user->favorites()
+            ->with('storeImages')
+            ->where('user_id', $user->id)
+            ->get()
+            ->map(function ($store) {
+                $store->images = $store->storeImages->pluck('images');
+                unset($store->storeImages);
+                return $store;
+            });
+
+        return $this->success($favorites, 'My Favorites', 200);
     }
+
 
     public function myAppointments()
     {
