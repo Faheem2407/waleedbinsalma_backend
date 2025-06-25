@@ -2,12 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\Traits\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class BusinessMiddleware
 {
+    use ApiResponse;
     /**
      * Handle an incoming request.
      *
@@ -15,11 +17,9 @@ class BusinessMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if(auth()->user()->role=='business'){
-            return $next($request);
-        }else{
-            auth()->logout();
-            return abort(401);
+        if (auth()->user()->role != 'business') {
+            return $this->error([], 'Only Business User Can Access', 401);
         }
+        return $next($request);
     }
 }

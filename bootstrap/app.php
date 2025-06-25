@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',
         commands: __DIR__ . '/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
+        channels: __DIR__ . '/../routes/channels.php',
         health: '/up',
         then: function () {
             Route::middleware('api')
@@ -49,6 +49,9 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::middleware('api')
                 ->prefix('api')
                 ->group(base_path('routes/business_owner_api.php'));
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/rhishi_api.php'));
         }
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -58,7 +61,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'business' => BusinessMiddleware::class,
         ]);
     })
-    ->withBroadcasting(__DIR__.'/../routes/channels.php',['prefix' => 'api', 'middleware' => ['jwt.verify']],)
+    ->withBroadcasting(__DIR__ . '/../routes/channels.php', ['prefix' => 'api', 'middleware' => ['jwt.verify']],)
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
