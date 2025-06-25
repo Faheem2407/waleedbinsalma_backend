@@ -75,9 +75,12 @@ class ProductController extends Controller
 
         $data = $request->except('image_url');
 
+        $image_path = null;
         if ($request->hasFile('image_url')) {
-            $data['image_url'] = $request->file('image_url')->store('product_images', 'public');
+            $image_path = uploadImage($request->file('image_url'), 'product_images');
         }
+        $data['image_url'] = $image_path;
+
 
         $product = Product::create($data);
 
@@ -124,9 +127,12 @@ class ProductController extends Controller
 
         $data = $request->except('image_url');
 
+        $image_path = null;
         if ($request->hasFile('image_url')) {
-            $data['image_url'] = $request->file('image_url')->store('product_images', 'public');
+            $image_path = uploadImage($request->file('image_url'), 'product_images');
+            $data['image_url'] = $image_path;
         }
+
 
         $product->update($data);
 
