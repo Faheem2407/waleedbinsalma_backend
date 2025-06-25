@@ -24,7 +24,7 @@ class UserController extends Controller {
         $user = User::where('id', auth()->user()->id)->first();
 
         if($user->role == "business") {
-            $user = User::where('id', auth()->user()->id)->with('businessProfile.onlineStore', 'businessProfile.businessDocument', 'businessProfile.businessService')->first();
+            $user = User::where('id', auth()->user()->id)->with('businessProfile.onlineStore', 'businessProfile.businessDocument', 'businessProfile.businessServices')->first();
         }
         if (!$user) {
             return $this->error([], 'User Not Found', 404);
