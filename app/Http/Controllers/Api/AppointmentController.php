@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\BusinessProfile;
 use App\Models\CatalogService;
+use App\Models\OnlineStore;
 use App\Models\Payment;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -18,7 +20,12 @@ use Stripe\PaymentIntent;
 class AppointmentController extends Controller
 {
     use ApiResponse;
-    
+
+    public function __construct()
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
+    }
+
     public function bookAppointment(Request $request)
     {
         $request->validate([
@@ -30,7 +37,6 @@ class AppointmentController extends Controller
             'booking_notes' => 'required|string',
             'store_service_ids' => 'required|array|min:1',
             'store_service_ids.*' => 'exists:store_services,service_id',
-            'stripe_token' => 'required|string',
         ]);
 
         DB::beginTransaction();
@@ -38,78 +44,51 @@ class AppointmentController extends Controller
         try {
             $userId = Auth::id();
             if (!$userId) {
-                return $this->error('User not authenticated.', 401);
+                return $this->error([], 'User not authenticated.', 401);
             }
 
             // Calculate total price
-            $services = CatalogService::whereIn('service_id', $request->store_service_ids)->get();
+            $services = CatalogService::whereIn('id', $request->store_service_ids)->get();
+
+            return $services;
+
             $totalAmount = $services->sum('price');
 
             if ($totalAmount <= 0) {
-                return $this->error('Invalid amount for payment.', 400);
+                return $this->error([], 'Invalid amount for payment.', 400);
             }
 
-            // Initialize Stripe
-            Stripe::setApiKey(config('services.stripe.secret'));
+            $amountInCents = (int) ($totalAmount * 100);
+            $applicationFeeAmount = (int) ($amountInCents * 0.05); // 5% fee
 
-            $charge = Charge::create([
-                'amount' => (int) ($totalAmount * 100),
+            $onlineStore = OnlineStore::findOrFail($request->online_store_id);
+            $shopOwner = $onlineStore->businessProfile->bankDetail;
+
+            if (!$shopOwner || !$shopOwner->stripe_account_id) {
+                return $this->error([], 'Shop owner Stripe account not connected.', 400);
+            }
+
+            $paymentIntent = PaymentIntent::create([
+                'amount' => $amountInCents,
                 'currency' => 'usd',
-                'source' => $request->stripe_token,
-                'description' => 'Appointment payment',
+                'payment_method_types' => ['card'],
+                'application_fee_amount' => $applicationFeeAmount,
+                'transfer_data' => [
+                    'destination' => $shopOwner->stripe_account_id,
+                ],
                 'metadata' => [
                     'user_id' => $userId,
+                    'online_store_id' => $onlineStore->id,
                     'appointment_type' => $request->appointment_type,
                 ],
             ]);
 
-            if ($charge->status !== 'succeeded') {
-                DB::rollBack();
-                return $this->error('Payment failed.', 402);
-            }
-
-            // Create appointment with 'confirmed' status
-            $appointment = Appointment::create([
-                'online_store_id' => $request->online_store_id,
-                'user_id' => $userId,
-                'appointment_type' => $request->appointment_type,
-                'is_professional_selected' => $request->boolean('is_professional_selected'),
-                'date' => $request->date,
-                'time' => $request->time,
-                'booking_notes' => $request->booking_notes,
-                'status' => 'confirmed',
-            ]);
-
-            // Create payment linked to appointment
-            $payment = Payment::create([
-                'user_id' => $userId,
-                'appointment_id' => $appointment->id,
-                'amount' => $totalAmount,
-                'currency' => 'usd',
-                'status' => 'succeeded',
-                'payment_method' => 'stripe',
-                'payment_intent_id' => $charge->id,  // Store Stripe charge ID here
-            ]);
-
-            // Attach selected services to appointment
-            $appointment->storeServices()->attach($request->store_service_ids);
-
             DB::commit();
 
-            return $this->success(
-                $appointment->load('storeServices.service'),
-                'Appointment booked and payment successful.',
-                201
-            );
-
+            return $paymentIntent;
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Failed to book appointment with payment', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'user_id' => $userId ?? null,
-            ]);
-            return $this->error('Failed to book appointment. ' . $e->getMessage(), 500);
+            return $this->error($e->getMessage(), 'Failed to book appointment', 500);
         }
     }
 
@@ -202,6 +181,4 @@ class AppointmentController extends Controller
 
         return $this->success(null, 'Appointment cancelled successfully.');
     }
-
-
 }
