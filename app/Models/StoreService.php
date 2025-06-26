@@ -29,4 +29,9 @@ class StoreService extends Model
     {
         return $this->belongsTo(CatalogService::class, 'catalog_service_id');
     }
+
+    public function appointmentServices()
+    {
+        return $this->hasMany(AppointmentService::class);
+    }
 }
