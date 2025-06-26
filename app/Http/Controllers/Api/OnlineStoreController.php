@@ -150,7 +150,6 @@ class OnlineStoreController extends Controller
     }
 
 
-
     public function getRegister(Request $request)
     {
         $request->validate([
@@ -175,7 +174,7 @@ class OnlineStoreController extends Controller
                 'storeTeams:id,online_store_id,team_id',
                 'storeTeams.team',
 
-                'storeServices:id,online_store_id,service_id',
+                'storeServices:id,online_store_id,catalog_service_id',
                 'storeServices.catalogService'
             ])
                 ->select([
@@ -205,17 +204,12 @@ class OnlineStoreController extends Controller
         try {
             $query = OnlineStore::with([
                 'storeImages:id,online_store_id,images',
-                'storeServices.service',
-                'storeServices.service.catalogService'
+                'storeServices.catalogService',
             ]);
-
-            // if ($request->filled('address')) {
-            //     $query->where('address', 'like', '%' . $request->address . '%');
-            // }
 
             if ($request->filled('service_id')) {
                 $query->whereHas('storeServices', function ($q) use ($request) {
-                    $q->where('service_id', $request->service_id);
+                    $q->where('catalog_service_id', $request->service_id);
                 });
             }
 
@@ -236,7 +230,6 @@ class OnlineStoreController extends Controller
             return $this->error([], $e->getMessage(), 500);
         }
     }
-
 
 
     public function showOnlineStoreDetails($id)

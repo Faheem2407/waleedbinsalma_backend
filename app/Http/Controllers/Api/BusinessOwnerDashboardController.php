@@ -8,6 +8,9 @@ use App\Traits\ApiResponse;
 use App\Models\Appointment;
 use App\Models\Payment;
 use App\Models\User;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OnlineStore;
 
 class BusinessOwnerDashboardController extends Controller
 {
@@ -158,7 +161,86 @@ class BusinessOwnerDashboardController extends Controller
 	    return $this->success($data, 'Appointment analytics fetched successfully', 200);
 	}
 
-	
+
+
+	public function productSalesAnalytics(Request $request)
+	{
+	    $storeId = $request->input('online_store_id');
+	    $filter = $request->input('filter', 'daily'); // Options: daily, weekly, yearly
+
+	    if (!$storeId) {
+	        return $this->error([], 'Online store ID is required.', 422);
+	    }
+
+	    // Define time window based on filter
+	    $now = now();
+	    $startDate = match ($filter) {
+	        'weekly' => $now->copy()->startOfWeek(),
+	        'yearly' => $now->copy()->startOfYear(),
+	        default => $now->copy()->startOfDay()
+	    };
+
+	    // Get all relevant product orders
+	    $orders = Order::with(['items.product'])
+	        ->where('online_store_id', $storeId)
+	        ->where('payment_status', 'succeeded')
+	        ->whereBetween('created_at', [$startDate, $now])
+	        ->get();
+
+	    $sales = [];
+	    $grandTotal = 0;
+
+	    foreach ($orders as $order) {
+	        foreach ($order->items as $item) {
+	            $timestamp = \Carbon\Carbon::parse($item->created_at);
+
+	            $groupKey = match ($filter) {
+	                'weekly' => $timestamp->format('Y-m-d'), // Group by day in the week
+	                'yearly' => $timestamp->format('F'),      // Group by month
+	                default => $timestamp->format('Y-m-d'),   // Daily
+	            };
+
+	            $productId = $item->product?->id;
+	            $productName = $item->product?->name ?? 'Unknown';
+
+	            $amount = $item->quantity * $item->price;
+	            $grandTotal += $amount;
+
+	            if (!isset($sales[$groupKey])) {
+	                $sales[$groupKey] = [];
+	            }
+
+	            if (!isset($sales[$groupKey][$productId])) {
+	                $sales[$groupKey][$productId] = [
+	                    'product_id' => $productId,
+	                    'product_name' => $productName,
+	                    'total_quantity' => 0,
+	                    'total_revenue' => 0,
+	                ];
+	            }
+
+	            $sales[$groupKey][$productId]['total_quantity'] += $item->quantity;
+	            $sales[$groupKey][$productId]['total_revenue'] += $amount;
+	        }
+	    }
+
+	    // Prepare response
+	    $groupedSales = collect($sales)->map(function ($products, $period) {
+	        return [
+	            'period' => $period,
+	            'products' => array_values($products),
+	        ];
+	    })->values();
+
+	    return $this->success([
+	        'filter' => $filter,
+	        'store_id' => $storeId,
+	        'total_sales_amount' => $grandTotal,
+	        'sales' => $groupedSales,
+	    ], 'Product sales analytics fetched successfully.', 200);
+	}
+
+
 
 	public function clientAnalytics(Request $request)
 	{
@@ -181,21 +263,25 @@ class BusinessOwnerDashboardController extends Controller
 
 	            $totalAppointments = $appointments->count();
 	            $totalConfirmed = $appointments->where('status', 'confirmed')->count();
-	            $totalCanceled = $appointments->where('status', 'canceled')->count();
+	            $totalCanceled  = $appointments->where('status', 'cancelled')->count();
 
 	            $totalSpent = $appointments->flatMap->payments
 	                ->where('status', 'succeeded')
 	                ->sum('amount');
 
+	            $firstAppointment = $appointments->sortBy('created_at')->first();
+	            $createdAt = $firstAppointment ? $firstAppointment->created_at : null;
+
 	            return [
-	                'client_id' => $user->id,
-	                'name' => $user->first_name.' '.$user->last_name,
-	                'email' => $user->email,
-	                'phone' => $user->number,
+	                'client_id'          => $user->id,
+	                'name'               => $user->first_name . ' ' . $user->last_name,
+	                'email'              => $user->email,
+	                'phone'              => $user->number,
+	                'created_at'         => $createdAt,
 	                'total_appointments' => $totalAppointments,
-	                'total_confirmed' => $totalConfirmed,
-	                'total_canceled' => $totalCanceled,
-	                'total_spent' => $totalSpent,
+	                'total_confirmed'    => $totalConfirmed,
+	                'total_canceled'     => $totalCanceled,
+	                'total_spent'        => $totalSpent,
 	            ];
 	        })
 	        ->sortByDesc('total_spent')
@@ -203,7 +289,6 @@ class BusinessOwnerDashboardController extends Controller
 
 	    return $this->success($clients, 'Client analytics fetched successfully', 200);
 	}
-
 
 
 }
