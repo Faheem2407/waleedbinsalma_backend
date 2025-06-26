@@ -55,8 +55,28 @@ class ConnectAccountController extends Controller
                 ]);
 
                 $bankDetail->update(['stripe_account_id' => $account->id]);
+
+                $stripe->accounts->update($account->id, [
+                    'settings' => [
+                        'payouts' => [
+                            'schedule' => [
+                                'interval' => 'manual',
+                            ],
+                        ],
+                    ],
+                ]);
             } else {
                 $account = $stripe->accounts->retrieve($bankDetail->stripe_account_id);
+
+                $stripe->accounts->update($account->id, [
+                    'settings' => [
+                        'payouts' => [
+                            'schedule' => [
+                                'interval' => 'manual',
+                            ],
+                        ],
+                    ],
+                ]);
             }
 
             // If Stripe says payouts are enabled, mark as connected
