@@ -73,7 +73,7 @@ class User extends Authenticatable implements JWTSubject
 
     public function businessProfile()
     {
-        return $this->hasOne(BusinessProfile::class,'user_id');
+        return $this->hasOne(BusinessProfile::class, 'user_id');
     }
 
     public function appointments()
@@ -85,7 +85,7 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(Conversation::class, 'sender_id', 'id');
     }
-    
+
     public function addresses()
     {
         return $this->hasMany(Address::class);
@@ -107,5 +107,4 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(OrderItem::class, 'product_id');
     }
-
 }

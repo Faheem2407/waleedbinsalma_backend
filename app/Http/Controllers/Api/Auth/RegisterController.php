@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
-class RegisterController extends Controller {
+class RegisterController extends Controller
+{
 
     use ApiResponse;
 
@@ -25,7 +26,8 @@ class RegisterController extends Controller {
      * @return void
      */
 
-    private function sendOtp($user) {
+    private function sendOtp($user)
+    {
         $code = rand(1000, 9999);
 
         // Store verification code in the database
@@ -47,11 +49,12 @@ class RegisterController extends Controller {
      * @return \Illuminate\Http\JsonResponse  JSON response with success or error.
      */
 
-    public function userRegister(Request $request) {
+    public function userRegister(Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
             'first_name'           => 'required|string|max:255',
-            'role'                 =>'required',
+            'role'                 => 'required',
             'last_name'           => 'required|string|max:255',
             'number'           => 'required|numeric',
             'country'           => 'required|string',
@@ -67,37 +70,37 @@ class RegisterController extends Controller {
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), "Validation Error", 422);
+            return $this->error($validator->errors(), $validator->errors()->first(), 422);
         }
 
         try {
-                $user                    = new User();
-                $user->first_name        = $request->input('first_name');
-                $user->last_name        = $request->input('last_name');
-                $user->country           = $request->input('country');
-                $user->number            = $request->input('number');
-                $user->email             = $request->input('email');
-                $user->password          = Hash::make($request->input('password')); // Hash the password
-                $user->agree_to_terms    = $request->input('agree_to_terms');
-                $user->role              = $request->input('role');
-                $user->email_verified_at = Carbon::now();
-                    $imageName = null;
-                if ($request->hasFile('avatar')) {
-                    $image     = $request->file('avatar');
-                    $imageName = uploadImage($image, 'User/Avatar');
-                }
+            $user                    = new User();
+            $user->first_name        = $request->input('first_name');
+            $user->last_name        = $request->input('last_name');
+            $user->country           = $request->input('country');
+            $user->number            = $request->input('number');
+            $user->email             = $request->input('email');
+            $user->password          = Hash::make($request->input('password')); // Hash the password
+            $user->agree_to_terms    = $request->input('agree_to_terms');
+            $user->role              = $request->input('role');
+            $user->email_verified_at = Carbon::now();
+            $imageName = null;
+            if ($request->hasFile('avatar')) {
+                $image     = $request->file('avatar');
+                $imageName = uploadImage($image, 'User/Avatar');
+            }
 
-                // dd($imageName);
+            // dd($imageName);
 
-                $user->avatar            = $imageName;
+            $user->avatar            = $imageName;
 
-                $user->save();
-                $token = JWTAuth::fromUser($user);
-                $user->setAttribute('token', $token);
-                $user->setAttribute('flag',false);
-                // if($request->role == 'business'){
-                //     if($user->)
-                // }
+            $user->save();
+            $token = JWTAuth::fromUser($user);
+            $user->setAttribute('token', $token);
+            $user->setAttribute('flag', false);
+            // if($request->role == 'business'){
+            //     if($user->)
+            // }
 
             return $this->success($user, 'Registered Successfully.', 201);
         } catch (\Exception $e) {
@@ -111,7 +114,8 @@ class RegisterController extends Controller {
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function otpVerify(Request $request) {
+    public function otpVerify(Request $request)
+    {
 
         // Validate the request
         $validator = Validator::make($request->all(), [
@@ -120,7 +124,7 @@ class RegisterController extends Controller {
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), "Validation Error", 422);
+            return $this->error($validator->errors(), $validator->errors()->first(), 422);
         }
 
         try {
@@ -128,9 +132,9 @@ class RegisterController extends Controller {
             $user = User::where('email', $request->input('email'))->first();
 
             $verification = EmailOtp::where('user_id', $user->id)
-            ->where('verification_code', $request->input('otp'))
-            ->where('expires_at', '>', Carbon::now())
-            ->first();
+                ->where('verification_code', $request->input('otp'))
+                ->where('expires_at', '>', Carbon::now())
+                ->first();
 
 
             if ($verification) {
@@ -161,14 +165,15 @@ class RegisterController extends Controller {
      * @return \Illuminate\Http\JsonResponse
      */
 
-    public function otpResend(Request $request) {
+    public function otpResend(Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), "Validation Error", 422);
+            return $this->error($validator->errors(), $validator->errors()->first(), 422);
         }
 
         try {

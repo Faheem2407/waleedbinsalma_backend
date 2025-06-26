@@ -19,6 +19,7 @@ jobs:
           server: ftp.softvencefsd.xyz
           username: softvencefsd_waleedbinsalma@waleedbinsalma.softvencefsd.xyz
           password: ${{ secrets.FTP_PASSWORD_SOFTVENCE }}
+          
 
   deploy-to-client:
     name: Deploy to client server
