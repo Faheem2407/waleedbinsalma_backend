@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Stripe\Checkout\Session;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
@@ -30,7 +31,6 @@ class AppointmentCreateController extends Controller
         $request->validate([
             'online_store_id' => 'required|exists:online_stores,id',
             'appointment_type' => 'required|in:single,group',
-            'is_professional_selected' => 'required|accepted',
             'date' => 'required|date|after_or_equal:today',
             'time' => 'required|date_format:H:i',
             'booking_notes' => 'required|string',
@@ -41,8 +41,8 @@ class AppointmentCreateController extends Controller
         ]);
 
         try {
-            $userId = Auth::id();
-            if (!$userId) {
+            $user = Auth::user();
+            if (!$user) {
                 return $this->error([], 'User not authenticated.', 401);
             }
 
@@ -68,6 +68,7 @@ class AppointmentCreateController extends Controller
 
             $checkoutSession = Session::create([
                 'payment_method_types' => ['card'],
+                'customer_email' => $user->email,
                 'mode' => 'payment',
                 'line_items' => [[
                     'price_data' => [
@@ -87,13 +88,14 @@ class AppointmentCreateController extends Controller
                 ],
                 'metadata' => [
                     'online_store_id' => $request->online_store_id,
-                    'user_id' => $userId,
+                    'user_id' => $user->id,
                     'appointment_type' => $request->appointment_type,
-                    'is_professional_selected' => $request->boolean('is_professional_selected'),
                     'date' => $request->date,
                     'time' => $request->time,
                     'booking_notes' => $request->booking_notes,
                     'store_service_ids' => implode(',', $request->store_service_ids),
+                    'success_redirect_url' => $request->get('success_redirect_url'),
+                    'cancel_redirect_url' => $request->get('cancel_redirect_url'),
                 ],
                 'success_url' => route('appointment.book.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('appointment.book.cancel') . '?redirect_url=' . $request->get('cancel_redirect_url'),
@@ -117,6 +119,8 @@ class AppointmentCreateController extends Controller
         try {
             $session = Session::retrieve($sessionId);
             $metadata = $session->metadata;
+            Log::info('Stripe Session Metadata:', (array) $metadata);
+            $success_redirect_url = $metadata->success_redirect_url ?? null;
 
             $userId = $metadata['user_id'];
             $storeServiceIds = explode(',', $metadata['store_service_ids']);
@@ -128,7 +132,6 @@ class AppointmentCreateController extends Controller
                 'online_store_id' => $metadata['online_store_id'],
                 'user_id' => $userId,
                 'appointment_type' => $metadata['appointment_type'],
-                'is_professional_selected' => $metadata['is_professional_selected'],
                 'date' => $metadata['date'],
                 'time' => $metadata['time'],
                 'booking_notes' => $metadata['booking_notes'],
@@ -159,8 +162,7 @@ class AppointmentCreateController extends Controller
             ]);
 
             DB::commit();
-
-            return $this->success($appointment, 'Appointment confirmed and payment completed.', 200);
+            return redirect($success_redirect_url);
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 'Failed to complete appointment.', 500);
