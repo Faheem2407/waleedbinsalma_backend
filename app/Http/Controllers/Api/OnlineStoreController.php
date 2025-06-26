@@ -61,7 +61,7 @@ class OnlineStoreController extends Controller
     //             $store->update($request->only(['name', 'about', 'phone', 'email', 'address', 'latitude', 'longitude']));
     //         }
 
-    //         $store->openingHours()->delete(); 
+    //         $store->openingHours()->delete();
     //         foreach ($request->opening_hours as $oh) {
     //             $store->openingHours()->create([
     //                 'day_name' => $oh['day_name'],
@@ -257,7 +257,7 @@ class OnlineStoreController extends Controller
             // Services
             $store->storeServices()->delete();
             foreach ($request->services as $service_id) {
-                $store->storeServices()->create(['service_id' => $service_id]);
+                $store->storeServices()->create(['catalog_service_id' => $service_id]);
             }
 
             DB::commit();
@@ -269,12 +269,11 @@ class OnlineStoreController extends Controller
                 'storeHighlights.highlight',
                 'storeValues.value',
                 'storeTeams.team',
-                'storeServices.service',
+                'storeServices.catalogService',
             ]);
 
             $message = $id ? 'Store updated successfully.' : 'Store created successfully.';
             return $this->success($store, $message, 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 500);
@@ -364,7 +363,6 @@ class OnlineStoreController extends Controller
             $stores = $query->paginate(4);
 
             return $this->success($stores, 'Stores fetched successfully.', 200);
-
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
@@ -401,7 +399,7 @@ class OnlineStoreController extends Controller
                 ->with('storeImages')
                 ->where('id', '!=', $store->id)
                 ->whereRaw(
-                    '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) 
+                    '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?))
                 + sin(radians(?)) * sin(radians(latitude)))) < ?',
                     [$latitude, $longitude, $latitude, $radius]
                 )
@@ -410,7 +408,6 @@ class OnlineStoreController extends Controller
             $store->nearby_stores = $nearbyStores;
 
             return $this->success($store, 'Store details fetched successfully.', 200);
-
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
@@ -436,7 +433,6 @@ class OnlineStoreController extends Controller
             $product->other_products = $otherProducts;
 
             return $this->success($product, 'Product details fetched successfully.', 200);
-
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
@@ -455,22 +451,8 @@ class OnlineStoreController extends Controller
             }
 
             return $this->success(['online_store_id' => $store->id], 'Online store ID fetched successfully.', 200);
-
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
     }
-
-
-
-
-
-
-
 }
-
-
-
-
-
-

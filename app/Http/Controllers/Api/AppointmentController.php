@@ -37,7 +37,7 @@ class AppointmentController extends Controller
             'time' => 'required|date_format:H:i',
             'booking_notes' => 'required|string',
             'store_service_ids' => 'required|array|min:1',
-            'store_service_ids.*' => 'exists:store_services,service_id',
+            'store_service_ids.*' => 'exists:store_services,catalog_service_id',
         ]);
 
         DB::beginTransaction();
@@ -52,7 +52,6 @@ class AppointmentController extends Controller
             // Calculate total price
             $services = CatalogService::whereIn('id', $request->store_service_ids)->get();
 
-            return $services;
 
             $totalAmount = $services->sum('price');
 
@@ -65,6 +64,7 @@ class AppointmentController extends Controller
             $applicationFeeAmount = (int) ($amountInCents * 0.05); // 5% fee
 
             $onlineStore = OnlineStore::findOrFail($request->online_store_id);
+
             $shopOwner = $onlineStore->businessProfile->bankDetail;
 
             if (!$shopOwner || !$shopOwner->stripe_account_id) {
@@ -86,7 +86,7 @@ class AppointmentController extends Controller
                 ],
             ]);
 
-            DB::commit();
+            // DB::commit();
 
             return $paymentIntent;
         } catch (\Exception $e) {
