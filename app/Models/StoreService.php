@@ -10,7 +10,7 @@ class StoreService extends Model
 
     protected $fillable = [
         'online_store_id',
-        'service_id',
+        'catalog_service_id',
     ];
 
     protected $hidden = ['created_at', 'updated_at'];
@@ -20,10 +20,10 @@ class StoreService extends Model
         return $this->belongsTo(OnlineStore::class, 'online_store_id');
     }
 
-    public function service()
-    {
-        return $this->belongsTo(Service::class);
-    }
+    // public function service()
+    // {
+    //     return $this->belongsTo(Service::class);
+    // }
 
     public function appointments()
     {
@@ -32,7 +32,7 @@ class StoreService extends Model
 
     public function catalogService()
     {
-        return $this->belongsTo(CatalogService::class,'service_id');
+        return $this->belongsTo(CatalogService::class,'catalog_service_id');
     }
 
 }
