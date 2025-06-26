@@ -44,6 +44,11 @@ class Appointment extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function review()
+    {
+        return $this->hasOne(Review::class);
+    }
+
     public function appointmentServices()
     {
         return $this->belongsToMany(StoreService::class, 'appointment_services', 'appointment_id', 'store_service_id');
