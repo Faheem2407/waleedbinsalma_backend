@@ -12,6 +12,11 @@ class BusinessBankDetails extends Model
         'status',
     ];
 
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+    ];
+
     public function businessProfile()
     {
         return $this->belongsTo(BusinessProfile::class, 'business_profile_id');

@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('appointments', function (Blueprint $table) {
+        Schema::create('reviews', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('online_store_id')->constrained()->onDelete('cascade');
+
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('appointment_type', ['single', 'group']);
-            $table->date('date');
-            $table->time('time');
-            $table->text('booking_notes')->nullable();
-            $table->enum('status', ['pending', 'confirmed', 'completed', 'cancelled'])->default('pending');
+            $table->foreignId('appointment_id')->constrained()->onDelete('cascade');
+            $table->foreignId('online_store_id')->constrained('online_stores')->onDelete('cascade');
+
+            $table->tinyInteger('rating')->comment('1 to 5');
+            $table->text('review')->nullable();
+
             $table->timestamps();
         });
+
     }
 
     /**
@@ -29,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('appointments');
+        Schema::dropIfExists('reviews');
     }
 };

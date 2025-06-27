@@ -15,137 +15,6 @@ class OnlineStoreController extends Controller
     use ApiResponse;
 
 
-
-    // public function createOrUpdate(Request $request, $id = null)
-    // {
-    //     $request->validate([
-    //         'business_profile_id' => 'required|integer|exists:business_profiles,id',
-    //         'name' => 'required|string',
-    //         'about' => 'required|string',
-    //         'phone' => 'required|string',
-    //         'email' => 'required|email',
-    //         'address' => 'required|string',
-    //         'latitude' => 'required|string',
-    //         'longitude' => 'required|string',
-    //         'opening_hours' => 'required|array|min:1',
-    //         'opening_hours.*.day_name' => 'required|string',
-    //         'opening_hours.*.morning_start_time' => 'required|string',
-    //         'opening_hours.*.morning_end_time' => 'required|string',
-    //         'opening_hours.*.evening_start_time' => 'required|string',
-    //         'opening_hours.*.evening_end_time' => 'required|string',
-    //         'images' => 'nullable|array|min:1',
-    //         'images.*' => 'image|max:2048',
-    //         'amenities' => 'required|array|min:1',
-    //         'amenities.*' => 'required|integer|exists:amenities,id',
-    //         'highlights' => 'required|array|min:1',
-    //         'highlights.*' => 'required|integer|exists:highlights,id',
-    //         'values' => 'required|array|min:1',
-    //         'values.*' => 'required|integer|exists:values,id',
-    //         'teams' => 'nullable|array',
-    //         'teams.*' => 'nullable|integer|exists:teams,id',
-    //         'services' => 'required|array|min:1',
-    //         'services.*' => 'required|integer|exists:services,id',
-    //     ]);
-
-    //     DB::beginTransaction();
-
-    //     try {
-    //         $store = $id
-    //             ? OnlineStore::findOrFail($id)
-    //             : OnlineStore::updateOrCreate(
-    //                 ['business_profile_id' => $request->business_profile_id],
-    //                 $request->only(['name', 'about', 'phone', 'email', 'address', 'latitude', 'longitude'])
-    //             );
-
-    //         if ($id) {
-    //             $store->update($request->only(['name', 'about', 'phone', 'email', 'address', 'latitude', 'longitude']));
-    //         }
-
-    //         $store->openingHours()->delete(); 
-    //         foreach ($request->opening_hours as $oh) {
-    //             $store->openingHours()->create([
-    //                 'day_name' => $oh['day_name'],
-    //                 'morning_start_time' => $oh['morning_start_time'],
-    //                 'morning_end_time' => $oh['morning_end_time'],
-    //                 'evening_start_time' => $oh['evening_start_time'],
-    //                 'evening_end_time' => $oh['evening_end_time'],
-    //             ]);
-    //         }
-
-    //         // Images
-    //         if ($request->hasFile('images')) {
-    //             foreach ($store->storeImages as $image) {
-    //                 $imagePath = public_path($image->images);
-    //                 if (file_exists($imagePath)) {
-    //                     unlink($imagePath);
-    //                 }
-    //             }
-    //             $store->storeImages()->delete();
-
-    //             $images = [];
-    //             foreach ($request->file('images') as $file) {
-    //                 $path = uploadImage($file, 'store_images');
-    //                 $images[] = ['images' => $path];
-    //             }
-    //             $store->storeImages()->createMany($images);
-    //         }
-
-    //         // Amenities
-    //         $store->storeAmenities()->delete();
-    //         foreach ($request->amenities as $amenity_id) {
-    //             $store->storeAmenities()->create(['amenity_id' => $amenity_id]);
-    //         }
-
-    //         // Highlights
-    //         $store->storeHighlights()->delete();
-    //         foreach ($request->highlights as $highlight_id) {
-    //             $store->storeHighlights()->create(['highlight_id' => $highlight_id]);
-    //         }
-
-    //         // Values
-    //         $store->storeValues()->delete();
-    //         foreach ($request->values as $value_id) {
-    //             $store->storeValues()->create(['value_id' => $value_id]);
-    //         }
-
-    //         // Teams
-    //         $store->storeTeams()->delete();
-    //         if ($request->filled('teams')) {
-    //             foreach ($request->teams as $team_id) {
-    //                 $store->storeTeams()->create(['team_id' => $team_id]);
-    //             }
-    //         }
-
-    //         // Services
-    //         $store->storeServices()->delete();
-    //         foreach ($request->services as $service_id) {
-    //             $store->storeServices()->create(['service_id' => $service_id]);
-    //         }
-
-    //         DB::commit();
-
-    //         $store->load([
-    //             'openingHours',
-    //             'storeImages',
-    //             'storeAmenities.amenity',
-    //             'storeHighlights.highlight',
-    //             'storeValues.value',
-    //             'storeTeams.team',
-    //             'storeServices.service',
-    //         ]);
-
-    //         $message = $id ? 'Store updated successfully.' : 'Store created successfully.';
-    //         return $this->success($store, $message, 200);
-
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         return $this->error($e->getMessage(), 500);
-    //     }
-    // }
-
-
-
-
     public function createOrUpdate(Request $request, $id = null)
     {
         $request->validate([
@@ -257,7 +126,7 @@ class OnlineStoreController extends Controller
             // Services
             $store->storeServices()->delete();
             foreach ($request->services as $service_id) {
-                $store->storeServices()->create(['service_id' => $service_id]);
+                $store->storeServices()->create(['catalog_service_id' => $service_id]);
             }
 
             DB::commit();
@@ -269,18 +138,16 @@ class OnlineStoreController extends Controller
                 'storeHighlights.highlight',
                 'storeValues.value',
                 'storeTeams.team',
-                'storeServices.service',
+                'storeServices.catalogService',
             ]);
 
             $message = $id ? 'Store updated successfully.' : 'Store created successfully.';
             return $this->success($store, $message, 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 500);
         }
     }
-
 
 
     public function getRegister(Request $request)
@@ -307,7 +174,7 @@ class OnlineStoreController extends Controller
                 'storeTeams:id,online_store_id,team_id',
                 'storeTeams.team',
 
-                'storeServices:id,online_store_id,service_id',
+                'storeServices:id,online_store_id,catalog_service_id',
                 'storeServices.catalogService'
             ])
                 ->select([
@@ -337,17 +204,12 @@ class OnlineStoreController extends Controller
         try {
             $query = OnlineStore::with([
                 'storeImages:id,online_store_id,images',
-                'storeServices.service',
-                'storeServices.service.catalogService'
+                'storeServices.catalogService',
             ]);
-
-            // if ($request->filled('address')) {
-            //     $query->where('address', 'like', '%' . $request->address . '%');
-            // }
 
             if ($request->filled('service_id')) {
                 $query->whereHas('storeServices', function ($q) use ($request) {
-                    $q->where('service_id', $request->service_id);
+                    $q->where('catalog_service_id', $request->service_id);
                 });
             }
 
@@ -364,12 +226,10 @@ class OnlineStoreController extends Controller
             $stores = $query->paginate(4);
 
             return $this->success($stores, 'Stores fetched successfully.', 200);
-
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
     }
-
 
 
     public function showOnlineStoreDetails($id)
@@ -403,7 +263,7 @@ class OnlineStoreController extends Controller
                 ->with('storeImages')
                 ->where('id', '!=', $store->id)
                 ->whereRaw(
-                    '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) 
+                    '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?))
                 + sin(radians(?)) * sin(radians(latitude)))) < ?',
                     [$latitude, $longitude, $latitude, $radius]
                 )
@@ -412,7 +272,6 @@ class OnlineStoreController extends Controller
             $store->nearby_stores = $nearbyStores;
 
             return $this->success($store, 'Store details fetched successfully.', 200);
-
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
@@ -438,7 +297,6 @@ class OnlineStoreController extends Controller
             $product->other_products = $otherProducts;
 
             return $this->success($product, 'Product details fetched successfully.', 200);
-
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
@@ -457,22 +315,8 @@ class OnlineStoreController extends Controller
             }
 
             return $this->success(['online_store_id' => $store->id], 'Online store ID fetched successfully.', 200);
-
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
     }
-
-
-
-
-
-
-
 }
-
-
-
-
-
-

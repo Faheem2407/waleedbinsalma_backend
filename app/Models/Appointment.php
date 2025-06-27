@@ -13,7 +13,6 @@ class Appointment extends Model
         'online_store_id',
         'user_id',
         'appointment_type',
-        'is_professional_selected',
         'date',
         'time',
         'booking_notes',
@@ -35,29 +34,23 @@ class Appointment extends Model
         return $this->belongsToMany(StoreService::class, 'appointment_services');
     }
 
-
-    // public function services()
-    // {
-    //     return $this->hasManyThrough(
-    //         Service::class,
-    //         StoreService::class,
-    //         'id',      
-    //         'id',         
-    //         'id',          
-    //         'service_id'   
-    //     )->distinct();
-    // }
-
     public function service()
     {
         return $this->belongsTo(Service::class);
     }
-
 
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
-}
+    public function review()
+    {
+        return $this->hasOne(Review::class);
+    }
 
+    public function appointmentServices()
+    {
+        return $this->belongsToMany(StoreService::class, 'appointment_services', 'appointment_id', 'store_service_id');
+    }
+}
