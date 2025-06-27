@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\AppointmentCreateController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\OnlineStoreController;
 use App\Http\Controllers\Api\BookmarkController;
@@ -27,14 +28,13 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('/bookmark/add', 'add');
         Route::post('/bookmark/remove', 'remove');
     });
-    // book appointment
+
+    // Book Appointment
     Route::controller(AppointmentController::class)->prefix('online-store')->group(function () {
-        Route::post('/appointment/book', 'bookAppointment');
         Route::get('/appointments', 'myAppointments');
         Route::post('/appointment/reschedule/{id}', 'rescheduleAppointment');
         Route::post('/appointment/cancel/{id}', 'cancelAppointment');
     });
-
 
     Route::controller(CartController::class)->prefix('product-cart')->group(function () {
         Route::post('/add', 'add');
@@ -47,16 +47,23 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('finalize-order', 'finalizeCartOrder');
     });
 
-
     Route::controller(CustomerDashboardController::class)->prefix('customer-dashboard')->group(function () {
         Route::get('/profile', 'showProfile');
-        Route::post('/update-profile','updateProfile');
+        Route::post('/update-profile', 'updateProfile');
         Route::post('/add-address', 'addAddress');
         Route::post('/edit-address', 'editAddress');
         Route::post('/delete-address', 'deleteAddress');
         Route::get('/my-favorites', 'myFavorites');
-        Route::get('/my-appointments','myAppointments');
+        Route::get('/my-appointments', 'myAppointments');
         Route::get('/my-products', 'myProducts');
     });
 
+    Route::controller(AppointmentCreateController::class)->prefix('online-store')->group(function () {
+        Route::post('/appointment/book', 'bookAppointment');
+    });
+});
+
+Route::controller(AppointmentCreateController::class)->prefix('online-store')->group(function () {
+    Route::post('/appointment/book/success', 'bookAppointmentSuccess')->name('appointment.book.success');
+    Route::post('/appointment/book/cancel', 'bookAppointmentCancel')->name('appointment.book.cancel');
 });
