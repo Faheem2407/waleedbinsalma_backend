@@ -48,14 +48,14 @@ class BusinessOwnerDashboardController extends Controller
 
 	    // Appointments for next 7 days
 	    $next7DaysBase = (clone $appointmentsQuery)->whereBetween('date', [$today, $next7Days]);
-	    $next7DaysAppointments = $next7DaysBase->with('storeServices.service')->orderBy('date')->get();
+	    $next7DaysAppointments = $next7DaysBase->with('storeServices.catalogService')->orderBy('date')->get();
 
 	    $next7DaysConfirmed = (clone $next7DaysBase)->where('status', 'confirmed')->count();
 	    $next7DaysCanceled = (clone $next7DaysBase)->where('status', 'cancelled')->count();
 
 	    // Appointments for next 30 days
 	    $next30DaysBase = (clone $appointmentsQuery)->whereBetween('date', [$today, $next30Days]);
-	    $next30DaysAppointments = $next30DaysBase->with('storeServices.service')->orderBy('date')->get();
+	    $next30DaysAppointments = $next30DaysBase->with('storeServices.catalogService')->orderBy('date')->get();
 
 	    $next30DaysConfirmed = (clone $next30DaysBase)->where('status', 'confirmed')->count();
 	    $next30DaysCanceled = (clone $next30DaysBase)->where('status', 'cancelled')->count();
@@ -64,45 +64,82 @@ class BusinessOwnerDashboardController extends Controller
 	    $todaysAppointments = (clone $appointmentsQuery)
 	        ->whereDate('date', now()->toDateString())
 	        ->orderBy('time')
-	        ->with('storeServices.service')
+	        ->with('user','storeServices.catalogService')
 	        ->get();
 
 	    // Activities
 	    $appointmentActivities = (clone $appointmentsQuery)
-	        ->with(['user', 'storeServices.service'])
+	        ->with(['user', 'storeServices.catalogService'])
 	        ->orderBy('created_at', 'desc')
 	        ->take(20)
 	        ->get();
 
 	    // Top services this month
-	    $topServicesThisMonth = Appointment::where('online_store_id', $storeId)
-	        ->whereBetween('date', [$startOfMonth, now()])
-	        ->with('storeServices.service')
-	        ->get()
-	        ->flatMap->storeServices
-	        ->groupBy('id')
-	        ->map(fn($services) => [
-	            'service_name' => optional($services->first()->service)->service_name ?? 'Unknown',
-	            'count' => $services->count(),
-	        ])
-	        ->sortByDesc('count')
-	        ->values()
-	        ->take(5);
+	    // $topServicesThisMonth = Appointment::where('online_store_id', $storeId)
+	    //     ->whereBetween('date', [$startOfMonth, now()])
+	    //     ->with('storeServices.catalogService')
+	    //     ->get()
+	    //     ->flatMap->storeServices
+	    //     ->groupBy('id')
+	    //     ->map(fn($services) => [
+	    //         'service_name' => optional($services->first()->service)->service_name ?? 'Unknown',
+	    //         'count' => $services->count(),
+	    //     ])
+	    //     ->sortByDesc('count')
+	    //     ->values()
+	    //     ->take(5);
 
-	    // Top services last month
-	    $topServicesLastMonth = Appointment::where('online_store_id', $storeId)
-	        ->whereBetween('date', [$startOfLastMonth, $endOfLastMonth])
-	        ->with('storeServices.service')
-	        ->get()
-	        ->flatMap->storeServices
-	        ->groupBy('id')
-	        ->map(fn($services) => [
-	            'service_name' => optional($services->first()->service)->service_name ?? 'Unknown',
-	            'count' => $services->count(),
-	        ])
-	        ->sortByDesc('count')
-	        ->values()
-	        ->take(5);
+	    // // Top services last month
+	    // $topServicesLastMonth = Appointment::where('online_store_id', $storeId)
+	    //     ->whereBetween('date', [$startOfLastMonth, $endOfLastMonth])
+	    //     ->with('storeServices.catalogService')
+	    //     ->get()
+	    //     ->flatMap->storeServices
+	    //     ->groupBy('id')
+	    //     ->map(fn($services) => [
+	    //         'service_name' => optional($services->first()->service)->service_name ?? 'Unknown',
+	    //         'count' => $services->count(),
+	    //     ])
+	    //     ->sortByDesc('count')
+	    //     ->values()
+	    //     ->take(5);
+
+
+
+	    // Helper to count services between dates
+		$serviceCountsBetween = function ($startDate, $endDate) use ($storeId) {
+		    return Appointment::where('online_store_id', $storeId)
+		        ->whereBetween('date', [$startDate, $endDate])
+		        ->with('storeServices.catalogService')
+		        ->get()
+		        ->flatMap->storeServices
+		        ->groupBy('catalog_service_id') // Group by catalog service ID
+		        ->mapWithKeys(fn($services, $catalogServiceId) => [
+		            $catalogServiceId => [
+		                'id' => $catalogServiceId,
+		                'service' => optional($services->first()->catalogService)->name ?? 'Unknown',
+		                'count' => $services->count(),
+		            ]
+		        ]);
+		};
+
+		$thisMonthServices = $serviceCountsBetween($startOfMonth, now());
+		$lastMonthServices = $serviceCountsBetween($startOfLastMonth, $endOfLastMonth);
+
+		// Merge both into desired format
+		$allServiceIds = collect($thisMonthServices->keys())->merge($lastMonthServices->keys())->unique();
+
+		$topServices = $allServiceIds->map(function ($id) use ($thisMonthServices, $lastMonthServices) {
+		    return [
+		        'id' => $id,
+		        'service' => $thisMonthServices[$id]['service'] ?? $lastMonthServices[$id]['service'] ?? 'Unknown',
+		        'thisMonth' => $thisMonthServices[$id]['count'] ?? 0,
+		        'lastMonth' => $lastMonthServices[$id]['count'] ?? 0,
+		    ];
+		})->sortByDesc('thisMonth')->values()->take(5); // Top 5 by thisMonth
+
+
+
 
 	    // Daily sales for last 7 days
 	    $recentSales = Payment::whereIn('appointment_id', $appointmentIds)
@@ -128,8 +165,9 @@ class BusinessOwnerDashboardController extends Controller
 	        'total_canceled' => $totalCanceled,
 	        'todays_appointments' => $todaysAppointments,
 	        'appointment_activities' => $appointmentActivities,
-	        'top_services_this_month' => $topServicesThisMonth,
-	        'top_services_last_month' => $topServicesLastMonth,
+	        // 'top_services_this_month' => $topServicesThisMonth,
+	        // 'top_services_last_month' => $topServicesLastMonth,
+	        'top_services' => $topServices,
 	        'recent_sales_last_7_days' => $recentSalesLast7Days,
 	    ];
 
@@ -161,8 +199,6 @@ class BusinessOwnerDashboardController extends Controller
 
 	    return $this->success($data, 'Appointment analytics fetched successfully', 200);
 	}
-
-
 
 	public function productSalesAnalytics(Request $request)
 	{
@@ -241,8 +277,6 @@ class BusinessOwnerDashboardController extends Controller
 	    ], 'Product sales analytics fetched successfully.', 200);
 	}
 
-
-
 	public function clientAnalytics(Request $request)
 	{
 	    $storeId = $request->input('online_store_id');
@@ -289,6 +323,45 @@ class BusinessOwnerDashboardController extends Controller
 	        ->values();
 
 	    return $this->success($clients, 'Client analytics fetched successfully', 200);
+	}
+
+	public function appointmentList(Request $request)
+	{
+	    $storeId = $request->input('online_store_id');
+
+	    if (!$storeId) {
+	        return $this->error([], 'Online store ID is required.', 422);
+	    }
+
+	    $appointments = Appointment::with([
+	            'user:id,first_name,last_name,email',
+	            'storeServices.catalogService:id,name,price,duration'
+	        ])
+	        ->where('online_store_id', $storeId)
+	        ->orderBy('date', 'desc')
+	        ->get();
+
+	    $appointmentList = $appointments->map(function ($appointment) {
+	        return [
+	            'appointment_id' => $appointment->id,
+	            'customer_name' => optional($appointment->user)->first_name.' '.optional($appointment->user)->last_name,
+	            'customer_email' => optional($appointment->user)->email,
+	            'appointment_date' => $appointment->date,
+	            'appointment_time' => $appointment->time,
+	            'appointment_notes' => $appointment->booking_notes,
+	            'services' => $appointment->storeServices->map(function ($storeService) {
+	                return [
+	                    'service_name' => optional($storeService->catalogService)->name ?? 'Unknown',
+	                    'price' => optional($storeService->catalogService)->price ?? 0,
+	                    'duration' => optional($storeService->catalogService)->duration ?? 'N/A'
+	                    
+	                ];
+	            }),
+	            'status' => $appointment->status,
+	        ];
+	    });
+
+	    return $this->success($appointmentList, 'Appointment list fetched successfully.', 200);
 	}
 
 

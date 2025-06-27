@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\SitesettingController;
 use App\Http\Controllers\Api\SocialLinkController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\Review\AppointmentReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,5 +98,10 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('/send-message/{id}', 'sendMessage');
         Route::get('/chat/{id}', 'getChat');
         Route::get('/conversations', 'conversations');
+    });
+
+    Route::controller(AppointmentReviewController::class)->prefix('appointment/review')->group(function () {
+        Route::post('/submit','submitReview');
+        Route::get('/all','storeReviews');
     });
 });
