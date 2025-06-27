@@ -91,11 +91,7 @@ class ChatController extends Controller
 
         $user = auth()->user();
 
-        // $business = OnlineStore::where('id', $id)->first();
-
-        // if (! $business) {
-        //     return $this->error([], 'Business not found', 404);
-        // }
+       
 
         try {
             DB::beginTransaction();
