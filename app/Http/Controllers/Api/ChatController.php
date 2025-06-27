@@ -1,15 +1,14 @@
 <?php
 namespace App\Http\Controllers\Api;
 
-use App\Models\Message;
-use App\Models\OnlineStore;
-use App\Traits\ApiResponse;
-use App\Models\Conversation;
-use Illuminate\Http\Request;
-use App\Events\MessageSentEvent;
 use App\Events\LatestMassageEvent;
-use Illuminate\Support\Facades\DB;
+use App\Events\MessageSentEvent;
 use App\Http\Controllers\Controller;
+use App\Models\Conversation;
+use App\Models\Message;
+use App\Traits\ApiResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class ChatController extends Controller
@@ -21,18 +20,23 @@ class ChatController extends Controller
         $user = auth()->user();
 
         $query = $user->conversations()
-        ->with(['sender:id,first_name,last_name,avatar', 'receiver:id,first_name,last_name,avatar', 'lastMessage:id,sender_id,receiver_id,conversation_id,message,type,is_read,created_at']);
+            ->with(['sender:id,first_name,last_name,avatar', 'receiver:id,first_name,last_name,avatar', 'lastMessage:id,sender_id,receiver_id,conversation_id,message,type,is_read,created_at']);
 
-        if($request->has('search')) {
-            $query->whereHas('sender', function ($query) use ($request) {
-                $query->where('first_name', 'like', '%' . $request->search . '%');
-            });
-            $query->orWhereHas('receiver', function ($query) use ($request) {
-                $query->where('first_name', 'like', '%' . $request->search . '%');
+        if ($request->has('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search, $user) {
+                $q->whereHas('sender', function ($q2) use ($search, $user) {
+                    $q2->where('first_name', 'like', '%' . $search . '%')
+                        ->where('id', '!=', $user->id);
+                })->orWhereHas('receiver', function ($q3) use ($search, $user) {
+                    $q3->where('first_name', 'like', '%' . $search . '%')
+                        ->where('id', '!=', $user->id);
+                });
             });
         }
 
-        $data = $query ->orderBy('updated_at', 'desc')->get();
+        $data = $query->orderBy('updated_at', 'desc')->get();
 
         if ($data->isEmpty()) {
             return $this->error([], 'No conversations found', 404);
@@ -46,13 +50,13 @@ class ChatController extends Controller
         $user = auth()->user();
 
         $messages = Message::with('sender:id,first_name,last_name,avatar', 'receiver:id,first_name,last_name,avatar')
-        ->select('id', 'sender_id', 'receiver_id', 'message', 'is_read', 'file_path', 'file_type', 'type', 'created_at')
-        ->where(function ($query) use ($user, $id) {
+            ->select('id', 'sender_id', 'receiver_id', 'message', 'is_read', 'file_path', 'file_type', 'type', 'created_at')
+            ->where(function ($query) use ($user, $id) {
 
-            $query->where('sender_id', $user->id)
-                ->where('receiver_id', $id);
+                $query->where('sender_id', $user->id)
+                    ->where('receiver_id', $id);
 
-        })->orWhere(function ($query) use ($user, $id) {
+            })->orWhere(function ($query) use ($user, $id) {
 
             $query->where('sender_id', $id)
                 ->where('receiver_id', $user->id);
@@ -96,7 +100,7 @@ class ChatController extends Controller
                     ->where('receiver_id', $user->id);
             })->first();
 
-            if (!$conversations) {
+            if (! $conversations) {
                 $conversations = Conversation::create([
                     'sender_id'   => $user->id,
                     'receiver_id' => $id,
@@ -142,7 +146,7 @@ class ChatController extends Controller
             broadcast(new MessageSentEvent($data));
 
             // # Broadcast the unread message
-            broadcast(new LatestMassageEvent($data->sender_id, $data->receiver_id, $data , $unreadMessageCount))->toOthers();
+            broadcast(new LatestMassageEvent($data->sender_id, $data->receiver_id, $data, $unreadMessageCount))->toOthers();
 
             DB::commit();
             return $this->success($data, 'Message sent successfully.', 200);
