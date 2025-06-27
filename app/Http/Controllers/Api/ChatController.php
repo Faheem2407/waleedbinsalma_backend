@@ -91,27 +91,27 @@ class ChatController extends Controller
 
         $user = auth()->user();
 
-        $business = OnlineStore::where('id', $id)->first();
+        // $business = OnlineStore::where('id', $id)->first();
 
-        if (! $business) {
-            return $this->error([], 'Business not found', 404);
-        }
+        // if (! $business) {
+        //     return $this->error([], 'Business not found', 404);
+        // }
 
         try {
             DB::beginTransaction();
 
-            $conversations = Conversation::where(function ($query) use ($user, $business) {
+            $conversations = Conversation::where(function ($query) use ($user, $id) {
                 $query->where('sender_id', $user->id)
-                    ->where('receiver_id', $business->businessProfile->user->id);
-            })->orWhere(function ($query) use ($user, $business) {
-                $query->where('sender_id', $business->businessProfile->user->id)
+                    ->where('receiver_id', $id);
+            })->orWhere(function ($query) use ($user, $id) {
+                $query->where('sender_id', $id)
                     ->where('receiver_id', $user->id);
             })->first();
 
             if (!$conversations) {
                 $conversations = Conversation::create([
                     'sender_id'   => $user->id,
-                    'receiver_id' => $business->businessProfile->user->id,
+                    'receiver_id' => $id,
                     'type'        => 'private',
                 ]);
             }
@@ -124,7 +124,7 @@ class ChatController extends Controller
 
                 $data = Message::create([
                     'sender_id'       => $user->id,
-                    'receiver_id'     => $business->businessProfile->user->id,
+                    'receiver_id'     => $id,
                     'conversation_id' => $conversations->id,
                     'file_name'       => $fileName,
                     'original_name'   => $fileOriginalName,
@@ -136,7 +136,7 @@ class ChatController extends Controller
             } else {
                 $data = Message::create([
                     'sender_id'       => $user->id,
-                    'receiver_id'     => $business->businessProfile->user->id,
+                    'receiver_id'     => $id,
                     'conversation_id' => $conversations->id,
                     'message'         => $request->message,
                     'type'            => 'text',
@@ -148,7 +148,7 @@ class ChatController extends Controller
                 return $this->error([], 'Message not sent', 404);
             }
 
-            $unreadMessageCount = Message::where('receiver_id', $business->businessProfile->user->id)->where('is_read', false)->count();
+            $unreadMessageCount = Message::where('receiver_id', $id)->where('is_read', false)->count();
 
             // # Broadcast the message
             broadcast(new MessageSentEvent($data));

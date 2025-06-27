@@ -376,6 +376,8 @@ class OnlineStoreController extends Controller
     {
         try {
             $store = OnlineStore::with([
+                'businessProfile:id,user_id',
+                'businessProfile.user:id,first_name,last_name,avatar',
                 'openingHours:id,online_store_id,day_name,morning_start_time,morning_end_time,evening_start_time,evening_end_time',
                 'storeImages:id,online_store_id,images',
                 'storeAmenities.amenity',
