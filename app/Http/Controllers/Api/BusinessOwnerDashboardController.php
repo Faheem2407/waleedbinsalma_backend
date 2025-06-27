@@ -40,7 +40,7 @@ class BusinessOwnerDashboardController extends Controller
 	    // Summary counts
 	    $totalAppointments = $appointmentIds->count();
 	    $totalConfirmed = Appointment::whereIn('id', $appointmentIds)->where('status', 'confirmed')->count();
-	    $totalCanceled = Appointment::whereIn('id', $appointmentIds)->where('status', 'canceled')->count();
+	    $totalCanceled = Appointment::whereIn('id', $appointmentIds)->where('status', 'cancelled')->count();
 
 	    $totalPrice = Payment::whereIn('appointment_id', $appointmentIds)
 	        ->where('status', 'succeeded')
@@ -51,14 +51,14 @@ class BusinessOwnerDashboardController extends Controller
 	    $next7DaysAppointments = $next7DaysBase->with('storeServices.service')->orderBy('date')->get();
 
 	    $next7DaysConfirmed = (clone $next7DaysBase)->where('status', 'confirmed')->count();
-	    $next7DaysCanceled = (clone $next7DaysBase)->where('status', 'canceled')->count();
+	    $next7DaysCanceled = (clone $next7DaysBase)->where('status', 'cancelled')->count();
 
 	    // Appointments for next 30 days
 	    $next30DaysBase = (clone $appointmentsQuery)->whereBetween('date', [$today, $next30Days]);
 	    $next30DaysAppointments = $next30DaysBase->with('storeServices.service')->orderBy('date')->get();
 
 	    $next30DaysConfirmed = (clone $next30DaysBase)->where('status', 'confirmed')->count();
-	    $next30DaysCanceled = (clone $next30DaysBase)->where('status', 'canceled')->count();
+	    $next30DaysCanceled = (clone $next30DaysBase)->where('status', 'cancelled')->count();
 
 	    // Today's appointments
 	    $todaysAppointments = (clone $appointmentsQuery)
