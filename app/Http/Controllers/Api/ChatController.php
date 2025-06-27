@@ -41,32 +41,26 @@ class ChatController extends Controller
         return $this->success($data, 'Conversations fetched successfully.', 200);
     }
 
-    public function getChat($id)
+    public function getChat(int $id)
     {
         $user = auth()->user();
 
-        $business = OnlineStore::where('id', $id)->first();
-
-        if (! $business) {
-            return $this->error([], 'Business not found', 404);
-        }
-
         $messages = Message::with('sender:id,first_name,last_name,avatar', 'receiver:id,first_name,last_name,avatar')
         ->select('id', 'sender_id', 'receiver_id', 'message', 'is_read', 'file_path', 'file_type', 'type', 'created_at')
-        ->where(function ($query) use ($user, $business) {
+        ->where(function ($query) use ($user, $id) {
 
             $query->where('sender_id', $user->id)
-                ->where('receiver_id', $business->businessProfile->user->id);
+                ->where('receiver_id', $id);
 
-        })->orWhere(function ($query) use ($user, $business) {
+        })->orWhere(function ($query) use ($user, $id) {
 
-            $query->where('sender_id', $business->businessProfile->user->id)
+            $query->where('sender_id', $id)
                 ->where('receiver_id', $user->id);
 
         })->orderBy('created_at', 'asc')->get();
 
         // Mark messages as read
-        Message::where('sender_id', $business->businessProfile->user->id)
+        Message::where('sender_id', $id)
             ->where('receiver_id', $user->id)
             ->where('is_read', false)
             ->update(['is_read' => true]);
@@ -90,8 +84,6 @@ class ChatController extends Controller
         }
 
         $user = auth()->user();
-
-       
 
         try {
             DB::beginTransaction();
