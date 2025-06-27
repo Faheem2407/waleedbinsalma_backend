@@ -1,15 +1,14 @@
 <?php
 namespace App\Http\Controllers\Api;
 
-use App\Models\Message;
-use App\Models\OnlineStore;
-use App\Traits\ApiResponse;
-use App\Models\Conversation;
-use Illuminate\Http\Request;
-use App\Events\MessageSentEvent;
 use App\Events\LatestMassageEvent;
-use Illuminate\Support\Facades\DB;
+use App\Events\MessageSentEvent;
 use App\Http\Controllers\Controller;
+use App\Models\Conversation;
+use App\Models\Message;
+use App\Traits\ApiResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class ChatController extends Controller
@@ -21,18 +20,25 @@ class ChatController extends Controller
         $user = auth()->user();
 
         $query = $user->conversations()
-        ->with(['sender:id,first_name,last_name,avatar', 'receiver:id,first_name,last_name,avatar', 'lastMessage:id,sender_id,receiver_id,conversation_id,message,type,is_read,created_at']);
+            ->with([
+                'participants' => function ($query) {
+                    $query->with('user:id,first_name,last_name,avatar')->where('user_id', '!=', auth()->id());
+                },
+                'lastMessage:id,sender_id,receiver_id,conversation_id,message,type,is_read,created_at'
+            ]);
 
-        if($request->has('search')) {
-            $query->whereHas('sender', function ($query) use ($request) {
-                $query->where('first_name', 'like', '%' . $request->search . '%');
-            });
-            $query->orWhereHas('receiver', function ($query) use ($request) {
-                $query->where('first_name', 'like', '%' . $request->search . '%');
+        // Search by participant's name (excluding self)
+        if ($request->has('search')) {
+            $search = $request->search;
+
+            $query->whereHas('participants.user', function ($q) use ($search, $user) {
+                $q->where('first_name', 'like', '%' . $search . '%')
+                ->where('id', '!=', $user->id);
             });
         }
 
-        $data = $query ->orderBy('updated_at', 'desc')->get();
+        $data = $query->orderBy('updated_at', 'desc')->get();
+
 
         if ($data->isEmpty()) {
             return $this->error([], 'No conversations found', 404);
@@ -41,32 +47,26 @@ class ChatController extends Controller
         return $this->success($data, 'Conversations fetched successfully.', 200);
     }
 
-    public function getChat($id)
+    public function getChat(int $id)
     {
         $user = auth()->user();
 
-        $business = OnlineStore::where('id', $id)->first();
-
-        if (! $business) {
-            return $this->error([], 'Business not found', 404);
-        }
-
         $messages = Message::with('sender:id,first_name,last_name,avatar', 'receiver:id,first_name,last_name,avatar')
-        ->select('id', 'sender_id', 'receiver_id', 'message', 'is_read', 'file_path', 'file_type', 'type', 'created_at')
-        ->where(function ($query) use ($user, $business) {
+            ->select('id', 'sender_id', 'receiver_id', 'message', 'is_read', 'file_path', 'file_type', 'type', 'created_at')
+            ->where(function ($query) use ($user, $id) {
 
-            $query->where('sender_id', $user->id)
-                ->where('receiver_id', $business->businessProfile->user->id);
+                $query->where('sender_id', $user->id)
+                    ->where('receiver_id', $id);
 
-        })->orWhere(function ($query) use ($user, $business) {
+            })->orWhere(function ($query) use ($user, $id) {
 
-            $query->where('sender_id', $business->businessProfile->user->id)
+            $query->where('sender_id', $id)
                 ->where('receiver_id', $user->id);
 
         })->orderBy('created_at', 'asc')->get();
 
         // Mark messages as read
-        Message::where('sender_id', $business->businessProfile->user->id)
+        Message::where('sender_id', $id)
             ->where('receiver_id', $user->id)
             ->where('is_read', false)
             ->update(['is_read' => true]);
@@ -91,31 +91,30 @@ class ChatController extends Controller
 
         $user = auth()->user();
 
-        $business = OnlineStore::where('id', $id)->first();
-
-        if (! $business) {
-            return $this->error([], 'Business not found', 404);
-        }
-
         try {
             DB::beginTransaction();
 
-            $conversations = Conversation::where(function ($query) use ($user, $business) {
-                $query->where('sender_id', $user->id)
-                    ->where('receiver_id', $business->businessProfile->user->id);
-            })->orWhere(function ($query) use ($user, $business) {
-                $query->where('sender_id', $business->businessProfile->user->id)
-                    ->where('receiver_id', $user->id);
-            })->first();
+            $conversations = Conversation::whereHas('participants', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->whereHas('participants', function ($q) use ($id) {
+                    $q->where('user_id', $id);
+                })
+                ->where('type', 'private')
+                ->first();
 
-            if (!$conversations) {
+            if (! $conversations) {
                 $conversations = Conversation::create([
-                    'sender_id'   => $user->id,
-                    'receiver_id' => $business->businessProfile->user->id,
-                    'type'        => 'private',
+                    'type' => 'private',
+                ]);
+
+                $conversations->participants()->createMany([
+                    ['user_id' => $user->id],
+                    ['user_id' => $id],
                 ]);
             }
 
+            
             if ($request->hasFile('file')) {
                 $fileName         = time() . '.' . $request->file('file')->getClientOriginalExtension();
                 $fileOriginalName = $request->file('file')->getClientOriginalName();
@@ -124,7 +123,7 @@ class ChatController extends Controller
 
                 $data = Message::create([
                     'sender_id'       => $user->id,
-                    'receiver_id'     => $business->businessProfile->user->id,
+                    'receiver_id'     => $id,
                     'conversation_id' => $conversations->id,
                     'file_name'       => $fileName,
                     'original_name'   => $fileOriginalName,
@@ -136,7 +135,7 @@ class ChatController extends Controller
             } else {
                 $data = Message::create([
                     'sender_id'       => $user->id,
-                    'receiver_id'     => $business->businessProfile->user->id,
+                    'receiver_id'     => $id,
                     'conversation_id' => $conversations->id,
                     'message'         => $request->message,
                     'type'            => 'text',
@@ -148,13 +147,13 @@ class ChatController extends Controller
                 return $this->error([], 'Message not sent', 404);
             }
 
-            $unreadMessageCount = Message::where('receiver_id', $business->businessProfile->user->id)->where('is_read', false)->count();
+            $unreadMessageCount = Message::where('receiver_id', $id)->where('is_read', false)->count();
 
             // # Broadcast the message
             broadcast(new MessageSentEvent($data));
 
             // # Broadcast the unread message
-            broadcast(new LatestMassageEvent($data->sender_id, $data->receiver_id, $data , $unreadMessageCount))->toOthers();
+            broadcast(new LatestMassageEvent($data->sender_id, $data->receiver_id, $data, $unreadMessageCount))->toOthers();
 
             DB::commit();
             return $this->success($data, 'Message sent successfully.', 200);
