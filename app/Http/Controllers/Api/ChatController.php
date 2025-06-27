@@ -20,23 +20,25 @@ class ChatController extends Controller
         $user = auth()->user();
 
         $query = $user->conversations()
-            ->with(['sender:id,first_name,last_name,avatar', 'receiver:id,first_name,last_name,avatar', 'lastMessage:id,sender_id,receiver_id,conversation_id,message,type,is_read,created_at']);
+            ->with([
+                'participants' => function ($query) {
+                    $query->with('user:id,first_name,last_name,avatar')->where('user_id', '!=', auth()->id());
+                },
+                'lastMessage:id,sender_id,receiver_id,conversation_id,message,type,is_read,created_at'
+            ]);
 
+        // Search by participant's name (excluding self)
         if ($request->has('search')) {
             $search = $request->search;
 
-            $query->where(function ($q) use ($search, $user) {
-                $q->whereHas('sender', function ($q2) use ($search, $user) {
-                    $q2->where('first_name', 'like', '%' . $search . '%')
-                        ->where('id', '!=', $user->id);
-                })->orWhereHas('receiver', function ($q3) use ($search, $user) {
-                    $q3->where('first_name', 'like', '%' . $search . '%')
-                        ->where('id', '!=', $user->id);
-                });
+            $query->whereHas('participants.user', function ($q) use ($search, $user) {
+                $q->where('first_name', 'like', '%' . $search . '%')
+                ->where('id', '!=', $user->id);
             });
         }
 
         $data = $query->orderBy('updated_at', 'desc')->get();
+
 
         if ($data->isEmpty()) {
             return $this->error([], 'No conversations found', 404);
@@ -92,22 +94,27 @@ class ChatController extends Controller
         try {
             DB::beginTransaction();
 
-            $conversations = Conversation::where(function ($query) use ($user, $id) {
-                $query->where('sender_id', $user->id)
-                    ->where('receiver_id', $id);
-            })->orWhere(function ($query) use ($user, $id) {
-                $query->where('sender_id', $id)
-                    ->where('receiver_id', $user->id);
-            })->first();
+            $conversations = Conversation::whereHas('participants', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->whereHas('participants', function ($q) use ($id) {
+                    $q->where('user_id', $id);
+                })
+                ->where('type', 'private')
+                ->first();
 
             if (! $conversations) {
                 $conversations = Conversation::create([
-                    'sender_id'   => $user->id,
-                    'receiver_id' => $id,
-                    'type'        => 'private',
+                    'type' => 'private',
+                ]);
+
+                $conversations->participants()->createMany([
+                    ['user_id' => $user->id],
+                    ['user_id' => $id],
                 ]);
             }
 
+            
             if ($request->hasFile('file')) {
                 $fileName         = time() . '.' . $request->file('file')->getClientOriginalExtension();
                 $fileOriginalName = $request->file('file')->getClientOriginalName();

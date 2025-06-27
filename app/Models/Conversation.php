@@ -18,15 +18,15 @@ class Conversation extends Model
         'updated_at',
     ];
 
-    public function sender()
-    {
-        return $this->belongsTo(User::class, 'sender_id', 'id');
-    }
+    // public function sender()
+    // {
+    //     return $this->belongsTo(User::class, 'sender_id', 'id');
+    // }
 
-    public function receiver()
-    {
-        return $this->belongsTo(User::class, 'receiver_id', 'id');
-    }
+    // public function receiver()
+    // {
+    //     return $this->belongsTo(User::class, 'receiver_id', 'id');
+    // }
 
     public function messages()
     {
@@ -41,5 +41,10 @@ class Conversation extends Model
     public function unreadMessages()
     {
         return $this->hasMany(Message::class, 'sender_id', 'id')->where('is_read', false);
+    }
+
+    public function participants()
+    {
+        return $this->hasMany(Participant::class);
     }
 }
