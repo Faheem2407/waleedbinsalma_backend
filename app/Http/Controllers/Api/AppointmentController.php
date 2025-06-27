@@ -23,7 +23,7 @@ class AppointmentController extends Controller
         $userId = Auth::id();
         $now = now();
 
-        $upcoming = Appointment::with(['storeServices.service', 'onlineStore'])
+        $upcoming = Appointment::with(['storeServices.catalogService', 'onlineStore'])
             ->where('user_id', $userId)
             ->where(function ($query) use ($now) {
                 $query->where('date', '>', $now->toDateString())
@@ -36,7 +36,7 @@ class AppointmentController extends Controller
             ->orderBy('time')
             ->get();
 
-        $previous = Appointment::with(['storeServices.service', 'onlineStore'])
+        $previous = Appointment::with(['storeServices.catalogService', 'onlineStore'])
             ->where('user_id', $userId)
             ->where(function ($query) use ($now) {
                 $query->where('date', '<', $now->toDateString())
@@ -84,7 +84,7 @@ class AppointmentController extends Controller
             'time' => $request->time,
         ]);
 
-        $data = $appointment->load('storeServices.service');
+        $data = $appointment->load('storeServices.catalogService');
 
         return $this->success($data, 'Appointment rescheduled successfully.', 200);
     }
