@@ -156,7 +156,7 @@ class AppointmentCreateController extends Controller
                 'appointment_id' => $appointment->id,
                 'amount' => $totalAmount,
                 'currency' => 'usd',
-                'status' => 'pending',
+                'status' => 'succeeded',
                 'payment_method' => 'stripe',
                 'payment_intent_id' => $session->payment_intent,
             ]);
