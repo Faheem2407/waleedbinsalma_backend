@@ -18,8 +18,9 @@ class BusinessOwnerDashboardController extends Controller
 
 	public function appointmentAnalytics(Request $request)
 	{
+
 	    $storeId = $request->input('online_store_id');
-	    $filter = $request->input('filter'); // next_7_days | next_30_days | null
+	    $filter = $request->input('filter','next_7_days'); // next_7_days | next_30_days | null
 
 	    if (!$storeId) {
 	        return $this->error([], 'Online store ID is required.', 422);
@@ -134,13 +135,13 @@ class BusinessOwnerDashboardController extends Controller
 
 	    // Conditionally include next 7 or 30 day appointments
 	    if ($filter === 'next_7_days') {
-	        $data['next_7_days_appointments'] = [
+	        $data['next_days_appointments'] = [
 	            'appointments' => $next7DaysAppointments,
 	            'total_confirmed' => $next7DaysConfirmed,
 	            'total_canceled' => $next7DaysCanceled,
 	        ];
 	    } elseif ($filter === 'next_30_days') {
-	        $data['next_30_days_appointments'] = [
+	        $data['next_days_appointments'] = [
 	            'appointments' => $next30DaysAppointments,
 	            'total_confirmed' => $next30DaysConfirmed,
 	            'total_canceled' => $next30DaysCanceled,
