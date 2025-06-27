@@ -13,7 +13,6 @@ class Appointment extends Model
         'online_store_id',
         'user_id',
         'appointment_type',
-        'is_professional_selected',
         'date',
         'time',
         'booking_notes',

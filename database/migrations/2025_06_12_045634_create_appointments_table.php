@@ -16,14 +16,12 @@ return new class extends Migration
             $table->foreignId('online_store_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->enum('appointment_type', ['single', 'group']);
-            $table->boolean('is_professional_selected')->default(true);
             $table->date('date');
             $table->time('time');
             $table->text('booking_notes')->nullable();
             $table->enum('status', ['pending', 'confirmed', 'completed', 'cancelled'])->default('pending');
             $table->timestamps();
         });
-
     }
 
     /**
