@@ -12,6 +12,8 @@ Route::controller(CatalogServiceCategoryController::class)->group(function () {
     Route::get('/catalog-service-categories', 'catalogServiceCategoriesCount');
     Route::post('/catalog/add-service-categories', 'addCategory');
     Route::post('/catalog/edit-service-categories/{id}', 'editCategory');
+    Route::get('/catalog/show-service-categories/{id}', 'showCategory');
+    Route::delete('/catalog/delete-service-categories/{id}','deleteCategory');
 });
 
 Route::controller(CatalogServiceController::class)->prefix('catalog-services')->group(function () {
