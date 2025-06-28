@@ -37,7 +37,7 @@ class UsersTableSeeder extends Seeder
                 'created_at' => now(),
             ],
             [
-                'first_name' => 'Customer',
+                'first_name' => 'Business',
                 'last_name' => 'vai',
                 'email' => 'business@gmail.com',
                 'email_verified_at' => now(),

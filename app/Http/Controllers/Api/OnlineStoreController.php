@@ -277,7 +277,7 @@ class OnlineStoreController extends Controller
 
             // recently viewed logic
             if(auth()->user()) {
-                $recentlyView = RecentlyViewedStore::createOrUpdate([
+                $recentlyView = RecentlyViewedStore::updateOrCreate([
                     'user_id' => auth()->user()->id,
                     'online_store_id' => $store->id
                 ]);
@@ -403,19 +403,20 @@ class OnlineStoreController extends Controller
 
     public function recentlyViewedStores(Request $request)
     {
-        $user = auth()->user();
+        if (auth()->user()) {
+            $user = auth()->user();
 
-        if (!$user) {
-            return $this->success(null, 'No recently viewed stores for guests.', 200);
+            $stores = $user->recentlyViewedStores()
+                ->with(['storeImages', 'storeServices.catalogService'])
+                ->take(10)
+                ->get();
+
+            return $this->success($stores, 'Recently viewed stores fetched successfully.', 200);
         }
 
-        $stores = $user->recentlyViewedStores()
-            ->with(['storeImages', 'storeServices.catalogService'])
-            ->take(10)
-            ->get();
-
-        return $this->success($stores, 'Recently viewed stores fetched successfully.', 200);
+        return $this->success(null, 'No recently viewed stores for guests.', 200);
     }
+
 
 
 
