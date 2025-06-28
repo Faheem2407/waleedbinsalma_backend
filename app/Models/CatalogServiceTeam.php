@@ -12,5 +12,6 @@ class CatalogServiceTeam extends Pivot
         'catalog_service_id',
         'team_id',
     ];
+
 }
 

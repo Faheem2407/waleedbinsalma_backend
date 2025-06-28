@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CatalogService extends Model
 {
+
+    use SoftDeletes;
+
     protected $fillable = [
         'catalog_service_category_id',
         'business_profile_id',
@@ -16,6 +20,8 @@ class CatalogService extends Model
         'price_type',
         'price',
     ];
+
+    protected $dates = ['deleted_at'];
 
     public function category()
     {
