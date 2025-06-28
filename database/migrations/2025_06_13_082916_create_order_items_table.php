@@ -19,7 +19,6 @@ return new class extends Migration
             $table->decimal('price', 10, 2); // per unit
             $table->timestamps();
         });
-
     }
 
     /**

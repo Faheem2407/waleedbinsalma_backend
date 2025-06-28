@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\OnlineStore;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Traits\ApiResponse;
@@ -106,8 +108,8 @@ class ProductPurchaseController extends Controller
                 'line_items' => $lineItems,
                 'mode' => 'payment',
                 'customer_email' => $user->email,
-                'success_url' => $request->success_redirect_url . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => $request->cancel_redirect_url,
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel') . '?redirect_url=' . $request->get('cancel_redirect_url'),
                 'payment_intent_data' => [
                     'application_fee_amount' => $applicationFeeAmount,
                     'transfer_data' => [
@@ -117,7 +119,12 @@ class ProductPurchaseController extends Controller
                 'metadata' => [
                     'user_id' => $user->id,
                     'store_id' => $request->store_id,
-                    'products' => $productIds,
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'email' => $request->email,
+                    'phone' => $request->phone,
+                    'address_id' => $request->address_id,
+                    'products' => $productInputs->toJson(),
                     'success_redirect_url' => $request->success_redirect_url,
                     'cancel_redirect_url' => $request->cancel_redirect_url,
                 ],
@@ -142,45 +149,96 @@ class ProductPurchaseController extends Controller
             $checkoutSession = \Stripe\Checkout\Session::retrieve($sessionId);
             $metadata = $checkoutSession->metadata;
 
-            $success_redirect_url = $metadata->success_redirect_url ?? null;
-            $user_id = $metadata->user_id ?? null;
-            $movement_id = $metadata->movement_id ?? null;
-            $movement_title = $metadata->movement_title ?? null;
-            $amount = $metadata->amount ?? null;
+            $userId = $metadata->user_id ?? null;
+            $storeId = $metadata->store_id ?? null;
+            $productsJson = $metadata->products ?? null;
+            $successUrl = $metadata->success_redirect_url ?? '/';
+            $firstName = $metadata->first_name ?? '';
+            $lastName = $metadata->last_name ?? '';
+            $email = $metadata->email ?? '';
+            $phone = $metadata->phone ?? '';
+            $addressId = $metadata->address_id ?? null;
 
-            $user = User::find($user_id);
-
-            if (!$user) {
-                return $this->error([], 'User not found.', 200);
+            if (!$userId || !$storeId || !$productsJson) {
+                throw new \Exception('Invalid or missing metadata from Stripe session.');
             }
 
-            $donationHistory = DonationHistory::create([
-                'user_id' => $user_id,
-                'movement_id' => $movement_id,
-                'amount' => $amount,
+            $user = User::find($userId);
+            if (!$user) {
+                return $this->error([], 'User not found.', 404);
+            }
+
+            $productInputs = collect(json_decode($productsJson, true));
+            $productIds = $productInputs->pluck('product_id');
+            $products = Product::whereIn('id', $productIds)->get();
+
+            $totalAmount = 0;
+
+            foreach ($productInputs as $item) {
+                $product = $products->where('id', $item['product_id'])->first();
+                if (!$product) {
+                    throw new \Exception("Product ID {$item['product_id']} not found.");
+                }
+
+                if ($product->stock_quantity < $item['quantity']) {
+                    throw new \Exception("Insufficient stock for {$product->name}.");
+                }
+
+                $totalAmount += $product->price * $item['quantity'];
+            }
+
+            $order = Order::create([
+                'user_id' => $user->id,
+                'online_store_id' => $storeId,
+                'address_id' => $addressId,
+                'name' => $firstName . ' ' . $lastName,
+                'email' => $email,
+                'phone' => $phone,
+                'total_amount' => $totalAmount,
+                'payment_status' => 'paid',
+                'payment_method' => 'stripe',
             ]);
 
+            foreach ($productInputs as $item) {
+                $product = $products->where('id', $item['product_id'])->first();
+                $quantity = $item['quantity'];
+
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                    'price' => $product->price,
+                ]);
+
+                // Deduct stock
+                $product->decrement('stock_quantity', $quantity);
+            }
+
             DB::commit();
-            return redirect($success_redirect_url);
+            return redirect($successUrl);
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error([], $e->getMessage(), 500);
         }
     }
 
-    // public function checkoutCancel(Request $request)
-    // {
-    //     $sessionId = $request->query('session_id');
+    public function checkoutCancel(Request $request)
+    {
+        $sessionId = $request->query('session_id');
 
-    //     if (!$sessionId) {
-    //         return redirect($request->redirect_url ?? null);
-    //     }
+        if (!$sessionId) {
+            return redirect($request->redirect_url ?? '/');
+        }
 
-    //     $checkoutSession = \Stripe\Checkout\Session::retrieve($sessionId);
-    //     $metadata = $checkoutSession->metadata;
+        try {
+            $checkoutSession = \Stripe\Checkout\Session::retrieve($sessionId);
+            $metadata = $checkoutSession->metadata;
 
-    //     $cancel_redirect_url = $metadata->cancel_redirect_url ?? null;
+            $cancelUrl = $metadata->cancel_redirect_url ?? '/';
 
-    //     return redirect($cancel_redirect_url);
-    // }
+            return redirect($cancelUrl);
+        } catch (\Exception $e) {
+            return redirect('/');
+        }
+    }
 }
