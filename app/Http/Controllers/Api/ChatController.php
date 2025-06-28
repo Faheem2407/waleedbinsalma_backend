@@ -74,6 +74,7 @@ class ChatController extends Controller
             ->update(['is_read' => true]);
         if ($messages->isEmpty()) {
             return $this->error([], 'No messages found', 404);
+            
         }
 
         return $this->success($messages, 'Messages fetched successfully.', 200);
