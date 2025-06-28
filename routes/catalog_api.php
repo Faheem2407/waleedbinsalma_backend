@@ -17,13 +17,12 @@ Route::controller(CatalogServiceCategoryController::class)->group(function () {
 Route::controller(CatalogServiceController::class)->prefix('catalog-services')->group(function () {
     Route::get('/',  'index');
     Route::post('/store',  'store');
-    Route::put('/update/{id}','update');
+    Route::put('/update/{id}', 'update');
     Route::get('/show/{id}',  'show');
     Route::delete('/destroy/{id}',  'destroy');
     Route::put('/{id}/update-team-members', 'updateTeamMembers');
     Route::get('/search',  'search');
     Route::get('/filter', 'filter');
-
 });
 
 Route::controller(TeamController::class)->prefix('teams')->group(function () {
@@ -68,4 +67,3 @@ Route::controller(ProductBrandController::class)->prefix('product-brands')->grou
     Route::post('{id}', 'update');
     Route::delete('{id}', 'destroy');
 });
-
