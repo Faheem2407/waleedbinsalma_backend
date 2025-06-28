@@ -68,9 +68,10 @@ class ChatController extends Controller
         // Mark messages as read
         Message::where('sender_id', $id)
             ->where('receiver_id', $user->id)
+            ->whereOr('sender_id', $user->id)
+            ->whereOr('receiver_id', $id)
             ->where('is_read', false)
             ->update(['is_read' => true]);
-
         if ($messages->isEmpty()) {
             return $this->error([], 'No messages found', 404);
         }
