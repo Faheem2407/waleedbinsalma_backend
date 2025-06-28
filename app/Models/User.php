@@ -113,4 +113,12 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(Review::class);
     }
 
+    public function recentlyViewedStores()
+    {
+        return $this->belongsToMany(OnlineStore::class, 'recently_viewed_stores')
+            ->withTimestamps()
+            ->orderByDesc('recently_viewed_stores.updated_at');
+    }
+
+
 }

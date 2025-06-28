@@ -20,6 +20,7 @@ Route::controller(BusinessHelpController::class)->prefix('cms/')->group(function
     Route::get('business-help', 'businessHelp');
     Route::get('knowledge-base/{id}',  'knowledgeBaseDetails');
     Route::get('/knowledge-base/item/search', 'searchKnowledgeBase');
+    Route::get('popular-article/{id}','popularArticleDetails');
 });
 
 Route::controller(BlogController::class)->prefix('cms/')->group(function () {

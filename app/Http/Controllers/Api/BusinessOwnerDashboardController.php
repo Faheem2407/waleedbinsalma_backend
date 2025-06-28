@@ -365,4 +365,43 @@ class BusinessOwnerDashboardController extends Controller
 	}
 
 
+
+
+	public function productList(Request $request)
+{
+    $storeId = $request->input('online_store_id');
+
+    if (!$storeId) {
+        return $this->error([], 'Online store ID is required.', 422);
+    }
+
+    $store = OnlineStore::with('businessProfile.products.category', 'businessProfile.products.brand')
+        ->find($storeId);
+
+    if (!$store || !$store->businessProfile) {
+        return $this->error([], 'Store or associated business profile not found.', 404);
+    }
+
+    $products = $store->businessProfile->products;
+
+    $productList = $products->map(function ($product) {
+        return [
+            'product_id' => $product->id,
+            'name' => $product->name,
+            'price' => $product->price,
+            'barcode' => $product->barcode,
+            'measure' => $product->measure,
+            'amount'  => $product->amount,
+            'short_description' => $product->short_description,
+            'description' => $product->description,
+            'category' => optional($product->category)->name ?? 'Uncategorized',
+            'brand' => optional($product->brand)->name ?? 'No Brand',
+            'stock_quantity' => $product->stock_quantity ?? 0,
+            'image' => $product->image_url,
+        ];
+    });
+
+    return $this->success($productList, 'Product list fetched successfully.', 200);
+}
+
 }
