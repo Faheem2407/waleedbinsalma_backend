@@ -15,11 +15,12 @@ Route::controller(OnlineStoreController::class)->prefix('online-store')->group(f
     Route::get('/show','getRegister');
 });
 
-
 Route::controller(OnlineStoreController::class)->prefix('online-store')->group(function () {
     Route::get('/show-all', 'showAllOnlineStores');
-    Route::get('/show-details/{id}', 'showOnlineStoreDetails');
     Route::get('/product/{id}', 'viewProduct');
+    Route::get('/trending',  'showTrendingStores');
+    Route::get('/recently-viewed','recentlyViewedStores');
+    Route::get('/show-details/{id}', 'showOnlineStoreDetails');
 });
 
 
@@ -60,6 +61,10 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
     Route::controller(AppointmentCreateController::class)->prefix('online-store')->group(function () {
         Route::post('/appointment/book', 'bookAppointment');
+    });
+
+    Route::controller(OnlineStoreController::class)->prefix('online-store')->group(function() {
+        Route::get('/my-bookings', 'myBookingStores');
     });
 });
 

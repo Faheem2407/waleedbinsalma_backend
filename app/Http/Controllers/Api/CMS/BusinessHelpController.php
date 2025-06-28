@@ -76,7 +76,7 @@ class BusinessHelpController extends Controller
         ];
 
         if (empty(array_filter($data, fn($value) => !is_null($value) && (!is_countable($value) || count($value) > 0)))) {
-            return $this->error('No data found', 404);
+            return $this->error([],'No data found', 404);
         }
 
         return $this->success((object) $data, 'Business help page data retrieved successfully', 200);
@@ -91,7 +91,7 @@ class BusinessHelpController extends Controller
 
 
         if (!$knowledgeBase) {
-            return $this->error('Knowledge base item not found', 404);
+            return $this->error([],'Knowledge base item not found', 404);
         }
 
         $relatedKnowledgeBaseItems = CMS::where('page', Page::BUSINESS_HELP)
@@ -124,7 +124,7 @@ class BusinessHelpController extends Controller
         $searchTerm = trim($request->query('search'));
 
         if (!$searchTerm) {
-            return $this->error('Search term is required', 422);
+            return $this->error([],'Search term is required', 422);
         }
 
         $results = CMS::query()
@@ -150,6 +150,41 @@ class BusinessHelpController extends Controller
     }
 
 
+    public function popularArticleDetails($id)
+    {
+        $article = CMS::where('page', Page::BUSINESS_HELP)
+            ->where('section', Section::BUSINESS_HELP_POPULAR_ARTICLES)
+            ->where('id', $id)
+            ->first();
+
+        if (!$article) {
+            return $this->error([],'Popular article not found', 404);
+        }
+
+        $relatedArticles = CMS::where('page', Page::BUSINESS_HELP)
+            ->where('section', Section::BUSINESS_HELP_POPULAR_ARTICLES)
+            ->where('id', '!=', $article->id)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $data = (object) [
+            'article' => [
+                'title' => $article->title,
+                'description' => $article->description,
+                'image' => $article->background_image ?? null,
+            ],
+            'related_articles' => $relatedArticles->map(function ($item) {
+                return [
+                    'title' => $item->title,
+                    'description' => $item->description,
+                    'image' => $item->background_image ?? null,
+                ];
+            }),
+        ];
+
+        return $this->success($data, 'Popular article details retrieved successfully', 200);
+    }
 
 
 }

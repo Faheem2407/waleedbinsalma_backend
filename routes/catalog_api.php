@@ -12,15 +12,17 @@ Route::controller(CatalogServiceCategoryController::class)->group(function () {
     Route::get('/catalog-service-categories', 'catalogServiceCategoriesCount');
     Route::post('/catalog/add-service-categories', 'addCategory');
     Route::post('/catalog/edit-service-categories/{id}', 'editCategory');
+    Route::get('/catalog/show-service-categories/{id}', 'showCategory');
+    Route::delete('/catalog/delete-service-categories/{id}','deleteCategory');
 });
 
 Route::controller(CatalogServiceController::class)->prefix('catalog-services')->group(function () {
     Route::get('/',  'index');
     Route::post('/store',  'store');
-    Route::put('/update/{id}','update');
+    Route::post('/update/{id}','update');
     Route::get('/show/{id}',  'show');
     Route::delete('/destroy/{id}',  'destroy');
-    Route::put('/{id}/update-team-members', 'updateTeamMembers');
+    Route::post('/{id}/update-team-members', 'updateTeamMembers');
     Route::get('/search',  'search');
     Route::get('/filter', 'filter');
 
