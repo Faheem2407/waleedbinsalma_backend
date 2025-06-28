@@ -32,4 +32,9 @@ class BusinessProfile extends Model
     {
         return $this->hasOne(OnlineStore::class);
     }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
 }
