@@ -276,12 +276,12 @@ class OnlineStoreController extends Controller
             $store->nearby_stores = $nearbyStores;
 
             // recently viewed logic
-            $recentlyView = RecentlyViewedStore::createOrUpdate([
-                'user_id' => auth()->user()->id,
-                'online_store_id' => $store->id
-            ]);
-
-            $store->recentlyView;
+            if(auth()->user()) {
+                $recentlyView = RecentlyViewedStore::createOrUpdate([
+                    'user_id' => auth()->user()->id,
+                    'online_store_id' => $store->id
+                ]);
+            }
 
             return $this->success($store, 'Store details fetched successfully.', 200);
         } catch (\Exception $e) {
@@ -290,75 +290,7 @@ class OnlineStoreController extends Controller
     }
 
 
-    // public function showOnlineStoreDetails($id)
-    // {
-    //     try {
-    //         $store = OnlineStore::with([
-    //             'businessProfile:id,user_id',
-    //             'businessProfile.user:id,first_name,last_name,avatar',
-    //             'openingHours:id,online_store_id,day_name,morning_start_time,morning_end_time,evening_start_time,evening_end_time',
-    //             'storeImages:id,online_store_id,images',
-    //             'storeAmenities.amenity',
-    //             'storeHighlights.highlight',
-    //             'storeValues.value',
-    //             'storeTeams.team',
-    //             'storeServices.catalogService'
-    //         ])->find($id);
-
-    //         if (!$store) {
-    //             return $this->error([], 'Store not found.', 404);
-    //         }
-
-    //         // ✅ Recently Viewed Logic (JWT-authenticated user OR guest)
-    //         try {
-    //             $user = auth('api')->user(); // ensure jwt guard is used
-
-    //             if ($user) {
-    //                 $user->recentlyViewedStores()->syncWithoutDetaching([$id]);
-    //                 $user->recentlyViewedStores()->updateExistingPivot($id, ['updated_at' => now()]);
-    //             } else {
-    //                 // Guest session-based tracking
-    //                 $viewed = session()->get('recently_viewed_stores', []);
-    //                 array_unshift($viewed, $id);
-    //                 $viewed = array_unique($viewed);
-    //                 session()->put('recently_viewed_stores', array_slice($viewed, 0, 10));
-    //             }
-    //         } catch (\Exception $ex) {
-    //             // optional: log error or skip silently
-    //         }
-
-    //         // ✅ Store Products from Business Profile
-    //         $products = Product::where('business_profile_id', $store->business_profile_id)->get();
-    //         $store->setRelation('products', $products);
-
-    //         // ✅ Nearby Stores (within 10km)
-    //         if ($store->latitude && $store->longitude) {
-    //             $latitude = $store->latitude;
-    //             $longitude = $store->longitude;
-    //             $radius = 10;
-
-    //             $nearbyStores = OnlineStore::select('id', 'business_profile_id', 'name', 'address', 'latitude', 'longitude')
-    //                 ->with('storeImages:id,online_store_id,images')
-    //                 ->where('id', '!=', $store->id)
-    //                 ->whereRaw(
-    //                     '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) 
-    //                      + sin(radians(?)) * sin(radians(latitude)))) < ?',
-    //                     [$latitude, $longitude, $latitude, $radius]
-    //                 )
-    //                 ->get();
-
-    //             $store->setRelation('nearby_stores', $nearbyStores);
-    //         } else {
-    //             $store->setRelation('nearby_stores', collect());
-    //         }
-
-    //         return $this->success($store, 'Store details fetched successfully.', 200);
-
-    //     } catch (\Exception $e) {
-    //         return $this->error([], $e->getMessage(), 500);
-    //     }
-    // }
-
+    
 
 
     public function viewProduct($id)
@@ -467,19 +399,6 @@ class OnlineStoreController extends Controller
 
         return $this->success($stores, 'Stores based on your booking history fetched successfully.', 200);
     }
-
-
-    // public function viewStore($id)
-    // {
-    //     $store = OnlineStore::findOrFail($id);
-
-    //     if (auth()->check()) {
-    //         auth()->user()->recentlyViewedStores()->syncWithoutDetaching([$id]);
-    //         auth()->user()->recentlyViewedStores()->updateExistingPivot($id, ['updated_at' => now()]);
-    //     }
-
-    //     return $this->success($store, 'Store details fetched.', 200);
-    // }
 
 
     public function recentlyViewedStores(Request $request)
