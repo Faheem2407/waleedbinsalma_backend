@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
 use App\Models\OnlineStore;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Product;
+use App\Models\Appointment;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\RecentlyViewedStore;
+
 
 class OnlineStoreController extends Controller
 {
@@ -223,7 +227,7 @@ class OnlineStoreController extends Controller
                 $query->whereRaw("$haversine <= ?", [$radius]);
             }
 
-            $stores = $query->paginate(4);
+            $stores = $query->latest()->paginate(4);
 
             return $this->success($stores, 'Stores fetched successfully.', 200);
         } catch (\Exception $e) {
@@ -271,11 +275,90 @@ class OnlineStoreController extends Controller
 
             $store->nearby_stores = $nearbyStores;
 
+            // recently viewed logic
+            $recentlyView = RecentlyViewedStore::createOrUpdate([
+                'user_id' => auth()->user()->id,
+                'online_store_id' => $store->id
+            ]);
+
+            $store->recentlyView;
+
             return $this->success($store, 'Store details fetched successfully.', 200);
         } catch (\Exception $e) {
             return $this->error([], $e->getMessage(), 500);
         }
     }
+
+
+    // public function showOnlineStoreDetails($id)
+    // {
+    //     try {
+    //         $store = OnlineStore::with([
+    //             'businessProfile:id,user_id',
+    //             'businessProfile.user:id,first_name,last_name,avatar',
+    //             'openingHours:id,online_store_id,day_name,morning_start_time,morning_end_time,evening_start_time,evening_end_time',
+    //             'storeImages:id,online_store_id,images',
+    //             'storeAmenities.amenity',
+    //             'storeHighlights.highlight',
+    //             'storeValues.value',
+    //             'storeTeams.team',
+    //             'storeServices.catalogService'
+    //         ])->find($id);
+
+    //         if (!$store) {
+    //             return $this->error([], 'Store not found.', 404);
+    //         }
+
+    //         // ✅ Recently Viewed Logic (JWT-authenticated user OR guest)
+    //         try {
+    //             $user = auth('api')->user(); // ensure jwt guard is used
+
+    //             if ($user) {
+    //                 $user->recentlyViewedStores()->syncWithoutDetaching([$id]);
+    //                 $user->recentlyViewedStores()->updateExistingPivot($id, ['updated_at' => now()]);
+    //             } else {
+    //                 // Guest session-based tracking
+    //                 $viewed = session()->get('recently_viewed_stores', []);
+    //                 array_unshift($viewed, $id);
+    //                 $viewed = array_unique($viewed);
+    //                 session()->put('recently_viewed_stores', array_slice($viewed, 0, 10));
+    //             }
+    //         } catch (\Exception $ex) {
+    //             // optional: log error or skip silently
+    //         }
+
+    //         // ✅ Store Products from Business Profile
+    //         $products = Product::where('business_profile_id', $store->business_profile_id)->get();
+    //         $store->setRelation('products', $products);
+
+    //         // ✅ Nearby Stores (within 10km)
+    //         if ($store->latitude && $store->longitude) {
+    //             $latitude = $store->latitude;
+    //             $longitude = $store->longitude;
+    //             $radius = 10;
+
+    //             $nearbyStores = OnlineStore::select('id', 'business_profile_id', 'name', 'address', 'latitude', 'longitude')
+    //                 ->with('storeImages:id,online_store_id,images')
+    //                 ->where('id', '!=', $store->id)
+    //                 ->whereRaw(
+    //                     '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) 
+    //                      + sin(radians(?)) * sin(radians(latitude)))) < ?',
+    //                     [$latitude, $longitude, $latitude, $radius]
+    //                 )
+    //                 ->get();
+
+    //             $store->setRelation('nearby_stores', $nearbyStores);
+    //         } else {
+    //             $store->setRelation('nearby_stores', collect());
+    //         }
+
+    //         return $this->success($store, 'Store details fetched successfully.', 200);
+
+    //     } catch (\Exception $e) {
+    //         return $this->error([], $e->getMessage(), 500);
+    //     }
+    // }
+
 
 
     public function viewProduct($id)
@@ -319,4 +402,117 @@ class OnlineStoreController extends Controller
             return $this->error([], $e->getMessage(), 500);
         }
     }
+
+
+
+    public function showTrendingStores(Request $request)
+    {
+        try {
+            $query = OnlineStore::withCount('reviews')
+                ->with([
+                    'storeImages:id,online_store_id,images',
+                    'storeServices.catalogService',
+                ])
+                ->orderByDesc('reviews_count'); // Sort by review count
+
+            if ($request->filled('service_id')) {
+                $query->whereHas('storeServices', function ($q) use ($request) {
+                    $q->where('catalog_service_id', $request->service_id);
+                });
+            }
+
+            if ($request->filled(['latitude', 'longitude'])) {
+                $latitude = $request->latitude;
+                $longitude = $request->longitude;
+                $radius = $request->radius ?? 1000;
+
+                $haversine = "(6371 * acos(cos(radians($latitude)) * cos(radians(latitude)) * cos(radians(longitude) - radians($longitude)) + sin(radians($latitude)) * sin(radians(latitude))))";
+
+                $query->whereRaw("$haversine <= ?", [$radius]);
+            }
+
+            $stores = $query->paginate(4);
+
+            return $this->success($stores, 'Trending stores fetched successfully.', 200);
+        } catch (\Exception $e) {
+            return $this->error([], $e->getMessage(), 500);
+        }
+    }
+
+
+
+    public function myBookingStores(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return $this->success([], 'Guest user – no booking-based stores available.', 200);
+        }
+
+        $storeIds = Appointment::where('user_id', $user->id)
+            ->pluck('online_store_id')
+            ->unique();
+
+        if ($storeIds->isEmpty()) {
+            return $this->success([], 'No previous bookings found.', 200);
+        }
+
+        $stores = OnlineStore::with([
+                'storeImages:id,online_store_id,images',
+                'storeServices.catalogService'
+            ])
+            ->whereIn('id', $storeIds)
+            ->latest()
+            ->get();
+
+        return $this->success($stores, 'Stores based on your booking history fetched successfully.', 200);
+    }
+
+
+    // public function viewStore($id)
+    // {
+    //     $store = OnlineStore::findOrFail($id);
+
+    //     if (auth()->check()) {
+    //         auth()->user()->recentlyViewedStores()->syncWithoutDetaching([$id]);
+    //         auth()->user()->recentlyViewedStores()->updateExistingPivot($id, ['updated_at' => now()]);
+    //     }
+
+    //     return $this->success($store, 'Store details fetched.', 200);
+    // }
+
+
+    public function recentlyViewedStores(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return $this->success(null, 'No recently viewed stores for guests.', 200);
+        }
+
+        $stores = $user->recentlyViewedStores()
+            ->with(['storeImages', 'storeServices.catalogService'])
+            ->take(10)
+            ->get();
+
+        return $this->success($stores, 'Recently viewed stores fetched successfully.', 200);
+    }
+
+
+
+    public function recentlyViewedStoresGuest()
+    {
+        $storeIds = session()->get('recently_viewed_stores', []);
+
+        if (empty($storeIds)) {
+            return $this->success([], 'No recently viewed stores found for guests.', 200);
+        }
+
+        $stores = OnlineStore::with(['storeImages', 'storeServices.catalogService'])
+            ->whereIn('id', $storeIds)
+            ->get();
+
+        return $this->success($stores, 'Recently viewed stores fetched successfully.', 200);
+    }
+
 }
