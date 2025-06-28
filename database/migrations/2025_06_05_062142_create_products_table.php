@@ -33,6 +33,7 @@ return new class extends Migration
             $table->integer('stock_quantity')->default(0);
             $table->string('image_url')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

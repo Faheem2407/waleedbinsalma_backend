@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('price_type');
             $table->string('price');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
