@@ -19,10 +19,10 @@ Route::controller(CatalogServiceCategoryController::class)->group(function () {
 Route::controller(CatalogServiceController::class)->prefix('catalog-services')->group(function () {
     Route::get('/',  'index');
     Route::post('/store',  'store');
-    Route::put('/update/{id}','update');
+    Route::post('/update/{id}','update');
     Route::get('/show/{id}',  'show');
     Route::delete('/destroy/{id}',  'destroy');
-    Route::put('/{id}/update-team-members', 'updateTeamMembers');
+    Route::post('/{id}/update-team-members', 'updateTeamMembers');
     Route::get('/search',  'search');
     Route::get('/filter', 'filter');
 

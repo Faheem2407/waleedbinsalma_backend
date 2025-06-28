@@ -15,17 +15,12 @@ Route::controller(OnlineStoreController::class)->prefix('online-store')->group(f
     Route::get('/show','getRegister');
 });
 
-
 Route::controller(OnlineStoreController::class)->prefix('online-store')->group(function () {
     Route::get('/show-all', 'showAllOnlineStores');
-    Route::get('/show-details/{id}', 'showOnlineStoreDetails');
     Route::get('/product/{id}', 'viewProduct');
     Route::get('/trending',  'showTrendingStores');
-    // Route::get('/recently-viewed','recentlyViewedStores');
-    Route::group(['middleware' => ['jwt.verify']], function () {
-        Route::get('/recently-viewed', 'recentlyViewedStores');
-    });
-    Route::get('/stores/recently-viewed-guest', 'recentlyViewedStoresGuest');
+    Route::get('/recently-viewed','recentlyViewedStores');
+    Route::get('/show-details/{id}', 'showOnlineStoreDetails');
 });
 
 
