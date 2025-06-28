@@ -6,6 +6,7 @@ use App\Events\MessageSentEvent;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,17 @@ class ChatController extends Controller
     {
         $user = auth()->user();
 
+        $receiverUser = User::find($id);
+
+        if (!$receiverUser) {
+            return $this->error([], 'User not found', 200);
+        }
+
+        Message::where('sender_id', $id)
+            ->where('receiver_id', $user->id)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
         $messages = Message::with('sender:id,first_name,last_name,avatar', 'receiver:id,first_name,last_name,avatar')
             ->select('id', 'sender_id', 'receiver_id', 'message', 'is_read', 'file_path', 'file_type', 'type', 'created_at')
             ->where(function ($query) use ($user, $id) {
@@ -65,17 +77,17 @@ class ChatController extends Controller
 
         })->orderBy('created_at', 'asc')->get();
 
-        // Mark messages as read
-        Message::where('sender_id', $id)
-            ->where('receiver_id', $user->id)
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
-
+        
         if ($messages->isEmpty()) {
-            return $this->error([], 'No messages found', 404);
+            return $this->error([], 'No messages found', 200);
         }
 
-        return $this->success($messages, 'Messages fetched successfully.', 200);
+        $response = [
+            'user'     => $receiverUser,
+            'messages' => $messages
+        ];
+
+        return $this->success($response, 'Messages fetched successfully.', 200);
     }
 
     public function sendMessage(Request $request, $id)

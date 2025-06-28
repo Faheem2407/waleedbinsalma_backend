@@ -36,6 +36,7 @@ class BusinessHelpController extends Controller
 
             'popular_articles' => $popularArticles->isNotEmpty() ? $popularArticles->map(function ($item) {
                 return [
+                    'id' => $item->id,
                     'title' => $item->title,
                     'description' => $item->description,
                     'image' => $item->background_image ? $item->background_image : null,

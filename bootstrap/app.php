@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\Admin;
 use App\Http\Middleware\BusinessMiddleware;
+use App\Http\Middleware\GuestMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -59,6 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.verify' => JWTMiddleware::class,
             'admin' => Admin::class,
             'business' => BusinessMiddleware::class,
+            'guest' => GuestMiddleware::class
         ]);
     })
     ->withBroadcasting(__DIR__ . '/../routes/channels.php', ['prefix' => 'api', 'middleware' => ['jwt.verify']],)
