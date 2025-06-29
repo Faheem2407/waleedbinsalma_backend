@@ -111,4 +111,25 @@ class AppointmentController extends Controller
 
         return $this->success([], 'Appointment cancelled successfully.', 200);
     }
+
+
+
+
+    public function totalAppointmentsThisWeek()
+    {
+        $startOfWeek = now()->startOfWeek();
+        $endOfWeek = now()->endOfWeek();
+
+        $totalAppointments = Appointment::whereBetween('date', [$startOfWeek, $endOfWeek])
+            ->count();
+
+        $data = [
+            'total_appointment_this_week' => $totalAppointments
+        ];
+        
+        return $this->success($data, 'total appointment count fetched successfully',200);
+    }
+
+
+
 }
