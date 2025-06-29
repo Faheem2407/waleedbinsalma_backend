@@ -22,15 +22,41 @@ class UserController extends Controller
 
     public function userData()
     {
+        $authUser = auth()->user();
 
-        $user = User::where('id', auth()->user()->id)->first();
-
-        if ($user->role == "business") {
-            $user = User::where('id', auth()->user()->id)
-                ->with('businessProfile.onlineStore.storeImages', 'businessProfile.onlineStore.openingHours', 'businessProfile.onlineStore.storeAmenities.amenity', 'businessProfile.onlineStore.storeHighlights.highlight', 'businessProfile.onlineStore.storeValues.value', 'businessProfile.onlineStore.storeServices.catalogService', 'businessProfile.onlineStore.storeTeams.team', 'businessProfile.businessDocument', 'businessProfile.businessServices', 'businessProfile.bankDetail')->first();
+        if (!$authUser) {
+            return $this->error([], 'Unauthenticated', 401);
         }
+
+        // Base query
+        $query = User::where('id', $authUser->id);
+
+        // Load extra relations if user is business
+        if ($authUser->role === 'business') {
+            $query->with([
+                'businessProfile.onlineStore.storeImages',
+                'businessProfile.onlineStore.openingHours',
+                'businessProfile.onlineStore.storeAmenities.amenity',
+                'businessProfile.onlineStore.storeHighlights.highlight',
+                'businessProfile.onlineStore.storeValues.value',
+                'businessProfile.onlineStore.storeServices.catalogService',
+                'businessProfile.onlineStore.storeTeams.team',
+                'businessProfile.businessDocument',
+                'businessProfile.businessServices',
+                'businessProfile.bankDetail',
+                'addresses'
+            ]);
+        } else {
+            // Load relations for non-business users
+            $query->with([
+                'addresses'
+            ]);
+        }
+
+        $user = $query->first();
+
         if (!$user) {
-            return $this->error([], 'User Not Found', 404);
+            return $this->error([], 'User not found', 404);
         }
 
         return $this->success($user, 'User data fetched successfully', 200);
