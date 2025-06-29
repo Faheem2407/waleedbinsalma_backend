@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Events\LatestMassageEvent;
@@ -34,14 +35,14 @@ class ChatController extends Controller
 
             $query->whereHas('participants.user', function ($q) use ($search, $user) {
                 $q->where('id', '!=', $user->id)
-                ->where(function ($q2) use ($search) {
-                    $q2->where('first_name', 'like', '%' . $search . '%')
-                        ->orWhere('last_name', 'like', '%' . $search . '%');
-                });
+                    ->where(function ($q2) use ($search) {
+                        $q2->where('first_name', 'like', '%' . $search . '%')
+                            ->orWhere('last_name', 'like', '%' . $search . '%');
+                    });
             });
         }
 
-         $data = $query->get()->sortByDesc(function ($conversation) {
+        $data = $query->get()->sortByDesc(function ($conversation) {
             return optional($conversation->lastMessage)->created_at;
         })->values();
 
@@ -74,23 +75,24 @@ class ChatController extends Controller
 
                 $query->where('sender_id', $user->id)
                     ->where('receiver_id', $id);
-
             })->orWhere(function ($query) use ($user, $id) {
 
-            $query->where('sender_id', $id)
-                ->where('receiver_id', $user->id);
+                $query->where('sender_id', $id)
+                    ->where('receiver_id', $user->id);
+            })->orderBy('created_at', 'asc')->get();
 
-        })->orderBy('created_at', 'asc')->get();
 
-        
         if ($messages->isEmpty()) {
-            return $this->error([], 'No messages found', 200);
+            $response = [
+                'user'     => $receiverUser,
+                'messages' => []
+            ];
+        } else {
+            $response = [
+                'user'     => $receiverUser,
+                'messages' => $messages
+            ];
         }
-
-        $response = [
-            'user'     => $receiverUser,
-            'messages' => $messages
-        ];
 
         return $this->success($response, 'Messages fetched successfully.', 200);
     }
@@ -112,8 +114,8 @@ class ChatController extends Controller
             DB::beginTransaction();
 
             $conversations = Conversation::whereHas('participants', function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })
+                $q->where('user_id', $user->id);
+            })
                 ->whereHas('participants', function ($q) use ($id) {
                     $q->where('user_id', $id);
                 })
@@ -131,7 +133,7 @@ class ChatController extends Controller
                 ]);
             }
 
-            
+
             if ($request->hasFile('file')) {
                 $fileName         = time() . '.' . $request->file('file')->getClientOriginalExtension();
                 $fileOriginalName = $request->file('file')->getClientOriginalName();
