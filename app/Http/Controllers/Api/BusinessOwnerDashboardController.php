@@ -414,7 +414,7 @@ class BusinessOwnerDashboardController extends Controller
 	    $tomorrow = now()->addDay()->startOfDay();
 
 	    $orders = Order::where('online_store_id', $storeId)
-	        ->where('payment_status', 'succeeded')
+	        ->where('payment_status', 'paid')
 	        ->whereBetween('created_at', [$today, $tomorrow])
 	        ->with(['items.product', 'user'])
 	        ->get();
@@ -458,7 +458,7 @@ class BusinessOwnerDashboardController extends Controller
 	    };
 
 	    $orders = Order::where('online_store_id', $storeId)
-	        ->where('payment_status', 'succeeded')
+	        ->where('payment_status', 'paid')
 	        ->whereBetween('created_at', $dateRange)
 	        ->with('items.product')
 	        ->get();
