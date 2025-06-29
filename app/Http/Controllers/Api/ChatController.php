@@ -38,7 +38,7 @@ class ChatController extends Controller
             });
         }
 
-        $data = $query->orderBy('updated_at', 'desc')->get();
+        $data = $query->latest()->get();
 
 
         if ($data->isEmpty()) {
