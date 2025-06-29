@@ -200,82 +200,82 @@ class BusinessOwnerDashboardController extends Controller
 	    return $this->success($data, 'Appointment analytics fetched successfully', 200);
 	}
 
-	public function productSalesAnalytics(Request $request)
-	{
-	    $storeId = $request->input('online_store_id');
-	    $filter = $request->input('filter', 'daily'); // Options: daily, weekly, yearly
+	// public function productSalesAnalytics(Request $request)
+	// {
+	//     $storeId = $request->input('online_store_id');
+	//     $filter = $request->input('filter', 'daily'); // Options: daily, weekly, yearly
 
-	    if (!$storeId) {
-	        return $this->error([], 'Online store ID is required.', 422);
-	    }
+	//     if (!$storeId) {
+	//         return $this->error([], 'Online store ID is required.', 422);
+	//     }
 
-	    // Define time window based on filter
-	    $now = now();
-	    $startDate = match ($filter) {
-	        'weekly' => $now->copy()->startOfWeek(),
-	        'yearly' => $now->copy()->startOfYear(),
-	        default => $now->copy()->startOfDay()
-	    };
+	//     // Define time window based on filter
+	//     $now = now();
+	//     $startDate = match ($filter) {
+	//         'weekly' => $now->copy()->startOfWeek(),
+	//         'yearly' => $now->copy()->startOfYear(),
+	//         default => $now->copy()->startOfDay()
+	//     };
 
-	    // Get all relevant product orders
-	    $orders = Order::with(['items.product'])
-	        ->where('online_store_id', $storeId)
-	        ->where('payment_status', 'succeeded')
-	        ->whereBetween('created_at', [$startDate, $now])
-	        ->get();
+	//     // Get all relevant product orders
+	//     $orders = Order::with(['items.product'])
+	//         ->where('online_store_id', $storeId)
+	//         ->where('payment_status', 'succeeded')
+	//         ->whereBetween('created_at', [$startDate, $now])
+	//         ->get();
 
-	    $sales = [];
-	    $grandTotal = 0;
+	//     $sales = [];
+	//     $grandTotal = 0;
 
-	    foreach ($orders as $order) {
-	        foreach ($order->items as $item) {
-	            $timestamp = \Carbon\Carbon::parse($item->created_at);
+	//     foreach ($orders as $order) {
+	//         foreach ($order->items as $item) {
+	//             $timestamp = \Carbon\Carbon::parse($item->created_at);
 
-	            $groupKey = match ($filter) {
-	                'weekly' => $timestamp->format('Y-m-d'), // Group by day in the week
-	                'yearly' => $timestamp->format('F'),      // Group by month
-	                default => $timestamp->format('Y-m-d'),   // Daily
-	            };
+	//             $groupKey = match ($filter) {
+	//                 'weekly' => $timestamp->format('Y-m-d'), // Group by day in the week
+	//                 'yearly' => $timestamp->format('F'),      // Group by month
+	//                 default => $timestamp->format('Y-m-d'),   // Daily
+	//             };
 
-	            $productId = $item->product?->id;
-	            $productName = $item->product?->name ?? 'Unknown';
+	//             $productId = $item->product?->id;
+	//             $productName = $item->product?->name ?? 'Unknown';
 
-	            $amount = $item->quantity * $item->price;
-	            $grandTotal += $amount;
+	//             $amount = $item->quantity * $item->price;
+	//             $grandTotal += $amount;
 
-	            if (!isset($sales[$groupKey])) {
-	                $sales[$groupKey] = [];
-	            }
+	//             if (!isset($sales[$groupKey])) {
+	//                 $sales[$groupKey] = [];
+	//             }
 
-	            if (!isset($sales[$groupKey][$productId])) {
-	                $sales[$groupKey][$productId] = [
-	                    'product_id' => $productId,
-	                    'product_name' => $productName,
-	                    'total_quantity' => 0,
-	                    'total_revenue' => 0,
-	                ];
-	            }
+	//             if (!isset($sales[$groupKey][$productId])) {
+	//                 $sales[$groupKey][$productId] = [
+	//                     'product_id' => $productId,
+	//                     'product_name' => $productName,
+	//                     'total_quantity' => 0,
+	//                     'total_revenue' => 0,
+	//                 ];
+	//             }
 
-	            $sales[$groupKey][$productId]['total_quantity'] += $item->quantity;
-	            $sales[$groupKey][$productId]['total_revenue'] += $amount;
-	        }
-	    }
+	//             $sales[$groupKey][$productId]['total_quantity'] += $item->quantity;
+	//             $sales[$groupKey][$productId]['total_revenue'] += $amount;
+	//         }
+	//     }
 
-	    // Prepare response
-	    $groupedSales = collect($sales)->map(function ($products, $period) {
-	        return [
-	            'period' => $period,
-	            'products' => array_values($products),
-	        ];
-	    })->values();
+	//     // Prepare response
+	//     $groupedSales = collect($sales)->map(function ($products, $period) {
+	//         return [
+	//             'period' => $period,
+	//             'products' => array_values($products),
+	//         ];
+	//     })->values();
 
-	    return $this->success([
-	        'filter' => $filter,
-	        'store_id' => $storeId,
-	        'total_sales_amount' => $grandTotal,
-	        'sales' => $groupedSales,
-	    ], 'Product sales analytics fetched successfully.', 200);
-	}
+	//     return $this->success([
+	//         'filter' => $filter,
+	//         'store_id' => $storeId,
+	//         'total_sales_amount' => $grandTotal,
+	//         'sales' => $groupedSales,
+	//     ], 'Product sales analytics fetched successfully.', 200);
+	// }
 
 	public function clientAnalytics(Request $request)
 	{
@@ -364,44 +364,131 @@ class BusinessOwnerDashboardController extends Controller
 	    return $this->success($appointmentList, 'Appointment list fetched successfully.', 200);
 	}
 
-
-
-
 	public function productList(Request $request)
-{
-    $storeId = $request->input('online_store_id');
+	{
+	    $storeId = $request->input('online_store_id');
 
-    if (!$storeId) {
-        return $this->error([], 'Online store ID is required.', 422);
-    }
+	    if (!$storeId) {
+	        return $this->error([], 'Online store ID is required.', 422);
+	    }
 
-    $store = OnlineStore::with('businessProfile.products.category', 'businessProfile.products.brand')
-        ->find($storeId);
+	    $store = OnlineStore::with('businessProfile.products.category', 'businessProfile.products.brand')
+	        ->find($storeId);
 
-    if (!$store || !$store->businessProfile) {
-        return $this->error([], 'Store or associated business profile not found.', 404);
-    }
+	    if (!$store || !$store->businessProfile) {
+	        return $this->error([], 'Store or associated business profile not found.', 404);
+	    }
 
-    $products = $store->businessProfile->products;
+	    $products = $store->businessProfile->products;
 
-    $productList = $products->map(function ($product) {
-        return [
-            'product_id' => $product->id,
-            'name' => $product->name,
-            'price' => $product->price,
-            'barcode' => $product->barcode,
-            'measure' => $product->measure,
-            'amount'  => $product->amount,
-            'short_description' => $product->short_description,
-            'description' => $product->description,
-            'category' => optional($product->category)->name ?? 'Uncategorized',
-            'brand' => optional($product->brand)->name ?? 'No Brand',
-            'stock_quantity' => $product->stock_quantity ?? 0,
-            'image' => $product->image_url,
-        ];
-    });
+	    $productList = $products->map(function ($product) {
+	        return [
+	            'product_id' => $product->id,
+	            'name' => $product->name,
+	            'price' => $product->price,
+	            'barcode' => $product->barcode,
+	            'measure' => $product->measure,
+	            'amount'  => $product->amount,
+	            'short_description' => $product->short_description,
+	            'description' => $product->description,
+	            'category' => optional($product->category)->name ?? 'Uncategorized',
+	            'brand' => optional($product->brand)->name ?? 'No Brand',
+	            'stock_quantity' => $product->stock_quantity ?? 0,
+	            'image' => $product->image_url,
+	        ];
+	    });
 
-    return $this->success($productList, 'Product list fetched successfully.', 200);
-}
+	    return $this->success($productList, 'Product list fetched successfully.', 200);
+	}
+
+
+	public function dailySales(Request $request)
+	{
+	    $storeId = $request->input('online_store_id');
+
+	    if (!$storeId) {
+	        return $this->error([], 'Online store ID is required.', 422);
+	    }
+
+	    $today = now()->startOfDay();
+	    $tomorrow = now()->addDay()->startOfDay();
+
+	    $orders = Order::where('online_store_id', $storeId)
+	        ->where('payment_status', 'succeeded')
+	        ->whereBetween('created_at', [$today, $tomorrow])
+	        ->with(['items.product', 'user'])
+	        ->get();
+
+	    $salesData = [];
+
+	    foreach ($orders as $order) {
+	        foreach ($order->items as $item) {
+	            $salesData[] = [
+	                'product_name' => $item->product->name ?? 'Unknown',
+	                'price' => $item->price,
+	                'quantity' => $item->quantity,
+	                'client_name' => $order->name,
+	                'total' => $item->price * $item->quantity,
+	            ];
+	        }
+	    }
+
+	    $totalSales = collect($salesData)->sum('total');
+	    $data = [
+	        'total_sales' => $totalSales,
+	        'sales' => $salesData
+	    ];
+	    return $this->success($data, 'Today\'s sales fetched successfully.',200);
+	}
+
+
+	public function sales(Request $request)
+	{
+	    $storeId = $request->input('online_store_id');
+	    $filter = $request->input('filter', 'weekly'); // weekly | monthly | yearly
+
+	    if (!$storeId) {
+	        return $this->error([], 'Online store ID is required.', 422);
+	    }
+
+	    $dateRange = match ($filter) {
+	        'monthly' => [now()->startOfMonth(), now()->endOfMonth()],
+	        'yearly' => [now()->startOfYear(), now()->endOfYear()],
+	        default => [now()->subDays(6)->startOfDay(), now()->endOfDay()],
+	    };
+
+	    $orders = Order::where('online_store_id', $storeId)
+	        ->where('payment_status', 'succeeded')
+	        ->whereBetween('created_at', $dateRange)
+	        ->with('items.product')
+	        ->get();
+
+	    $productStats = [];
+
+	    foreach ($orders as $order) {
+	        foreach ($order->items as $item) {
+	            $pid = $item->product_id;
+	            if (!isset($productStats[$pid])) {
+	                $productStats[$pid] = [
+	                    'product_id' => $pid,
+	                    'product_name' => $item->product->name ?? 'Unknown',
+	                    'quantity_sold' => 0,
+	                    'sales_amount' => 0,
+	                ];
+	            }
+
+	            $productStats[$pid]['quantity_sold'] += $item->quantity;
+	            $productStats[$pid]['sales_amount'] += $item->quantity * $item->price;
+	        }
+	    }
+
+	    $totalSales = array_sum(array_column($productStats, 'sales_amount'));
+	    $data = [
+	        'total_sales' => $totalSales,
+	        'products' => array_values($productStats),
+	        'filter' => $filter,
+	    ];
+	    return $this->success($data, 'Sales report fetched successfully.',200);
+	}
 
 }
