@@ -28,17 +28,22 @@ class ChatController extends Controller
                 'lastMessage:id,sender_id,receiver_id,conversation_id,message,type,is_read,created_at'
             ]);
 
-        // Search by participant's name (excluding self)
-        if ($request->has('search')) {
+        // Filter by participant name
+        if ($request->filled('search')) {
             $search = $request->search;
 
             $query->whereHas('participants.user', function ($q) use ($search, $user) {
-                $q->where('first_name', 'like', '%' . $search . '%')
-                ->where('id', '!=', $user->id);
+                $q->where('id', '!=', $user->id)
+                ->where(function ($q2) use ($search) {
+                    $q2->where('first_name', 'like', '%' . $search . '%')
+                        ->orWhere('last_name', 'like', '%' . $search . '%');
+                });
             });
         }
 
-        $data = $query->latest()->get();
+         $data = $query->get()->sortByDesc(function ($conversation) {
+            return optional($conversation->lastMessage)->created_at;
+        })->values();
 
 
         if ($data->isEmpty()) {
