@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Traits\ApiResponse;
+use App\Models\Order;
 
 class CustomerDashboardController extends Controller
 {
@@ -139,13 +140,44 @@ class CustomerDashboardController extends Controller
         return $this->success($data, 'My Appointments', 200);
     }
 
+
     public function myProducts()
     {
         $user = auth()->user();
         if (!$user) {
             return $this->error([], 'User Not Found', 404);
         }
-        $data = $user->products()->with('items')->where('user_id', $user->id)->get();
-        return $this->success($data, 'My Products', 200);
+
+        $orders = Order::with(['orderItems.product'])
+            ->where('user_id', $user->id)
+            ->get();
+
+        $orderData = $orders->map(function ($order) {
+            return [
+                'order_id' => $order->id,
+                'order_total' => $order->total_amount,
+                'payment_method' => $order->payment_method,
+                'payment_status' => $order->payment_status,
+                'created_at' => $order->created_at,
+                'products' => $order->orderItems->map(function ($item) {
+                    return [
+                        'product_id' => $item->product->id ?? null,
+                        'product_name' => $item->product->name ?? null,
+                        'product_description' => $item->product->description ?? null,
+                        'product_price' => $item->product->price ?? null,
+                        'ordered_quantity' => $item->quantity,
+                        'price_per_unit' => $item->price,
+                        'subtotal' => $item->quantity * $item->price,
+                    ];
+                }),
+            ];
+        });
+
+        return $this->success([
+            'orders' => $orderData,
+        ], 'My Ordered Products with Details', 200);
     }
+
+
+
 }

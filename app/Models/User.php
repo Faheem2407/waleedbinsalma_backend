@@ -120,5 +120,11 @@ class User extends Authenticatable implements JWTSubject
             ->orderByDesc('recently_viewed_stores.updated_at');
     }
 
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+
 
 }

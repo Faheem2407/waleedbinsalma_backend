@@ -28,20 +28,20 @@
                 @csrf
 
                 <div class="mt-4 input-style-1">
-                    <label for="shop_name">Shop Name <span class="text-danger">*</span></label>
+                    <label for="shop_name">User Name <span class="text-danger">*</span></label>
                     <input type="text" id="shop_name" name="shop_name"
                         class="form-control @error('shop_name') is-invalid @enderror"
-                        value="{{ old('shop_name') }}" placeholder="Enter Shop Name" required />
+                        value="{{ old('shop_name') }}" placeholder="Enter User Name" required />
                     @error('shop_name')
                         <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
                     @enderror
                 </div>
 
                 <div class="mt-4 input-style-1">
-                    <label for="shop_location">Shop Location <span class="text-danger">*</span></label>
+                    <label for="shop_location">User Location <span class="text-danger">*</span></label>
                     <input type="text" id="shop_location" name="shop_location"
                         class="form-control @error('shop_location') is-invalid @enderror"
-                        value="{{ old('shop_location') }}" placeholder="Enter Shop Location" required />
+                        value="{{ old('shop_location') }}" placeholder="Enter User Location" required />
                     @error('shop_location')
                         <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
                     @enderror
