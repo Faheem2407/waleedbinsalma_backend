@@ -10,11 +10,51 @@ class ServicesSeeder extends Seeder
     public function run()
     {
         $services = [
-            ['service_name' => 'Hair Cutting', 'icon' => 'scissors', 'status' => 'active'],
-            ['service_name' => 'Manicure', 'icon' => 'hand-sparkles', 'status' => 'active'],
-            ['service_name' => 'Massage', 'icon' => 'spa', 'status' => 'active'],
-            ['service_name' => 'Facial', 'icon' => 'face-smile', 'status' => 'active'],
-            ['service_name' => 'Waxing', 'icon' => 'fire', 'status' => 'active'],
+            [
+                'service_name' => 'haircut',
+                'icon' => 'backend/images/services/haircut.png',
+                'status' => 'active',
+            ],
+            [
+                'service_name' => 'Laundry Service',
+                'icon' => 'backend/images/services/washing-machine.png',
+                'status' => 'active',
+            ],
+            [
+                'service_name' => 'Spa Service',
+                'icon' => 'backend/images/services/spa.png',
+                'status' => 'active',
+            ],
+            [
+                'service_name' => 'Massage Service',
+                'icon' => 'backend/images/services/massage.jpg',
+                'status' => 'active',
+            ],
+            [
+                'service_name' => 'Hair Salon',
+                'icon' => 'backend/images/services/hair_salon.jpg',
+                'status' => 'active',
+            ],
+            [
+                'service_name' => 'Personal Trainer',
+                'icon' => 'backend/images/services/personal_trainer.jpg',
+                'status' => 'active',
+            ],
+            [
+                'service_name' => 'Gym & Training',
+                'icon' => 'backend/images/services/gym.jpg',
+                'status' => 'active',
+            ],
+            [
+                'service_name' => 'Wax Salon',
+                'icon' => 'backend/images/services/wax_salon.jpg',
+                'status' => 'active',
+            ],
+            [
+                'service_name' => 'Eye brows',
+                'icon' => 'backend/images/services/eye_brows.jpg',
+                'status' => 'active',
+            ]
         ];
 
         Service::insert($services);

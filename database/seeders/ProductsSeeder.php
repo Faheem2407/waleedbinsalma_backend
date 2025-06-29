@@ -25,9 +25,57 @@ class ProductsSeeder extends Seeder
                 'supply_price' => 8.50,
                 'price' => 25.00,
                 'stock_quantity' => 50,
-                'image_url' => 'shampoo.jpg'
+                'image_url' => 'backend/images/product.png'
             ],
-            // Add more products
+            [
+                'name' => 'Professional Hair Oil',
+                'barcode' => '123456789012',
+                'measure' => '500ml',
+                'amount' => 25,
+                'short_description' => 'For all hair types',
+                'description' => 'Professional salon-quality shampoo',
+                'supply_price' => 8.50,
+                'price' => 25.00,
+                'stock_quantity' => 50,
+                'image_url' => 'backend/images/oil.png'
+            ],
+            [
+                'name' => 'Face Mask',
+                'barcode' => '123456789012',
+                'measure' => '500ml',
+                'amount' => 25,
+                'short_description' => 'For all hair types',
+                'description' => 'Professional salon-quality shampoo',
+                'supply_price' => 8.50,
+                'price' => 25.00,
+                'stock_quantity' => 50,
+                'image_url' => 'backend/images/mask.png'
+            ],
+            [
+                'name' => 'Beauty Soap',
+                'barcode' => '123456789012',
+                'measure' => '5pc',
+                'amount' => 25,
+                'short_description' => 'For all hair types',
+                'description' => 'Professional salon-quality shampoo',
+                'supply_price' => 8.50,
+                'price' => 25.00,
+                'stock_quantity' => 50,
+                'image_url' => 'backend/images/soap.png'
+            ],
+            [
+                'name' => 'Body Lotion',
+                'barcode' => '123456789012',
+                'measure' => '500ml',
+                'amount' => 25,
+                'short_description' => 'For all hair types',
+                'description' => 'Professional salon-quality shampoo',
+                'supply_price' => 8.50,
+                'price' => 25.00,
+                'stock_quantity' => 50,
+                'image_url' => 'backend/images/lotion.png'
+            ],
+            
         ];
         
         foreach ($businesses as $business) {
