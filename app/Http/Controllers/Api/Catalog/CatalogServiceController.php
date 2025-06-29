@@ -50,7 +50,7 @@ class CatalogServiceController extends Controller
         return $this->success($service, 'Catalog Service created successfully!', 201);
     }
 
-   
+
     public function update(Request $request, $id)
     {
         $service = CatalogService::find($id);
@@ -151,8 +151,8 @@ class CatalogServiceController extends Controller
 
     public function filter(Request $request)
     {
-        $teamId = $request->team_member; 
-        $catalog_service_category_Id = $request->catalog_service_category_id;  
+        $teamId = $request->team_member;
+        $catalog_service_category_Id = $request->catalog_service_category_id;
 
         $services = CatalogService::with(['teams', 'service'])
             ->when($teamId, function ($query) use ($teamId) {
@@ -170,7 +170,4 @@ class CatalogServiceController extends Controller
 
         return $this->success($services, 'Catalog services filtered successfully.');
     }
-
-
-
 }

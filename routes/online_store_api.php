@@ -10,9 +10,9 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CustomerDashboardController;
 
 Route::controller(OnlineStoreController::class)->prefix('online-store')->group(function () {
-    Route::post('/register','createOrUpdate');
-    Route::get('/details/{business_profile_id}','getOnlineStoreIdByBusinessProfile');
-    Route::get('/show','getRegister');
+    Route::post('/register', 'createOrUpdate');
+    Route::get('/details/{business_profile_id}', 'getOnlineStoreIdByBusinessProfile');
+    Route::get('/show', 'getRegister');
 });
 
 Route::controller(OnlineStoreController::class)->prefix('online-store')->group(function () {
@@ -38,17 +38,6 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::get('/appointments', 'myAppointments');
         Route::post('/appointment/reschedule/{id}', 'rescheduleAppointment');
         Route::post('/appointment/cancel/{id}', 'cancelAppointment');
-    });
-
-    Route::controller(CartController::class)->prefix('product-cart')->group(function () {
-        Route::post('/add', 'add');
-        Route::delete('/remove', 'remove');
-        Route::get('/view', 'view');
-    });
-
-    Route::controller(CartController::class)->prefix('cart')->group(function () {
-        Route::post('create-payment-intent', 'createCartPaymentIntent');
-        Route::post('finalize-order', 'finalizeCartOrder');
     });
 
     Route::controller(CustomerDashboardController::class)->prefix('customer-dashboard')->group(function () {

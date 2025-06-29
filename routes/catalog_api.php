@@ -25,7 +25,6 @@ Route::controller(CatalogServiceController::class)->prefix('catalog-services')->
     Route::post('/{id}/update-team-members', 'updateTeamMembers');
     Route::get('/search',  'search');
     Route::get('/filter', 'filter');
-
 });
 
 Route::controller(TeamController::class)->prefix('teams')->group(function () {
@@ -70,4 +69,3 @@ Route::controller(ProductBrandController::class)->prefix('product-brands')->grou
     Route::post('{id}', 'update');
     Route::delete('{id}', 'destroy');
 });
-

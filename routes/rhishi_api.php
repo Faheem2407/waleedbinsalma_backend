@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ConnectAccountController;
+use App\Http\Controllers\Api\ProductPurchaseController;
 use Illuminate\Support\Facades\Route;
 /*
 |--------------------------------------------------------------------------
@@ -17,9 +18,18 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::controller(ConnectAccountController::class)->prefix('stripe/account')->group(function () {
         Route::post('/connect', 'connectAccount');
     });
+
+    Route::controller(ProductPurchaseController::class)->group(function () {
+        Route::post('/product/purchase', 'productPurchase');
+    });
 });
 
 Route::controller(ConnectAccountController::class)->prefix('instructor')->group(function () {
     Route::get('/connect/success', 'connectSuccess')->name('connect.success');
     Route::get('/connect/cancel', 'connectCancel')->name('connect.cancel');
+});
+
+Route::controller(ProductPurchaseController::class)->group(function () {
+    Route::get('/product/purchase/checkout-success', 'checkoutSuccess')->name('checkout.success');
+    Route::get('/product/purchase/checkout-cancel', 'checkoutCancel')->name('checkout.cancel');
 });
