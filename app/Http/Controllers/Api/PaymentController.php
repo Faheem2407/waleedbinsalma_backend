@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Subscription;
+use App\Models\SubscriptionPayment;
 use App\Models\OnlineStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Stripe\Stripe;
+use Stripe\Checkout\Session;
+use App\Traits\ApiResponse;
 
 class PaymentController extends Controller
 {
+    use ApiResponse;
+
     public function __construct()
     {
         Stripe::setApiKey(config('services.stripe.secret'));
@@ -18,25 +24,21 @@ class PaymentController extends Controller
 
     public function checkout(Request $request)
     {
-        $validated = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'store_id' => 'required|exists:online_stores,id',
             'success_redirect_url' => 'required|url',
             'cancel_redirect_url' => 'required|url',
         ]);
 
-        if ($validated->fails()) {
-            return response()->json([
-                'status' => false,
-                'errors' => $validated->errors(),
-                'message' => $validated->errors()->first()
-            ], 422);
+        if ($validator->fails()) {
+            return $this->error($validator->errors(), $validator->errors()->first(), 422);
         }
 
-        $store = OnlineStore::findOrFail($request->store_id);
-        $price = 999; // $9.99 in cents
-
         try {
-            $checkoutSession = \Stripe\Checkout\Session::create([
+            $store = OnlineStore::findOrFail($request->store_id);
+            $price = 999; // $9.99 in cents
+
+            $checkoutSession = Session::create([
                 'payment_method_types' => ['card'],
                 'line_items' => [[
                     'price_data' => [
@@ -57,16 +59,11 @@ class PaymentController extends Controller
                 ],
             ]);
 
-            return response()->json([
-                'status' => true,
+            return $this->success([
                 'checkout_url' => $checkoutSession->url,
-                'message' => 'Checkout session created successfully.'
-            ], 201);
+            ], 'Checkout session created successfully.', 201);
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->error($e->getMessage(), 'Failed to create Stripe checkout session.', 500);
         }
     }
 
@@ -74,24 +71,28 @@ class PaymentController extends Controller
     {
         $sessionId = $request->query('session_id');
         $storeId = $request->query('store_id');
-        $redirect = $request->query('redirect');
+        $redirect = $request->query('redirect') ?? '/';
 
         if (!$sessionId || !$storeId) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Missing session or store info.'
-            ], 422);
+            return $this->error([], 'Missing session or store info.', 422);
         }
 
         DB::beginTransaction();
+
         try {
-            $checkoutSession = \Stripe\Checkout\Session::retrieve($sessionId);
+            $session = Session::retrieve($sessionId);
             $store = OnlineStore::findOrFail($storeId);
 
             $now = now();
             $end = $now->copy()->addDays(30);
 
-            // Save payment info
+            $subscription = Subscription::create([
+                'online_store_id' => $store->id,
+                'start_date' => $now,
+                'end_date' => $end,
+                'is_renew' => false,
+            ]);
+
             SubscriptionPayment::create([
                 'subscription_id' => $subscription->id,
                 'payment_intent_id' => $session->payment_intent,
@@ -101,29 +102,18 @@ class PaymentController extends Controller
                 'payment_method' => $session->payment_method_types[0] ?? null,
             ]);
 
-            Subscription::create([
-                'online_store_id' => $store->id,
-                'start_date' => $now,
-                'end_date' => $end,
-                'is_renew' => false,
-            ]);
-
             DB::commit();
 
-            return redirect($redirect ?? '/');
+            return redirect($redirect);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->error([], 'Failed to complete payment: ' . $e->getMessage(), 500);
         }
     }
 
     public function checkoutCancel(Request $request)
     {
         $redirect = $request->query('redirect') ?? '/';
-
         return redirect($redirect);
     }
 }

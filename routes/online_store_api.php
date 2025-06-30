@@ -82,5 +82,6 @@ Route::controller(PaymentController::class)->group(function () {
     Route::get('/checkout-cancel', 'checkoutCancel')->name('checkout.cancel');
 });
 
-Route::get('online-store/subscription/success', [SubscriptionController::class, 'success'])->name('subscription.success');
-Route::get('online-store/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+Route::get('online-store/subscription/success', [SubscriptionController::class, 'handleSuccess'])->name('subscription.success');
+Route::get('online-store/subscription/cancel', [SubscriptionController::class, 'handleCancel'])->name('subscription.cancel');
+Route::get('online-store/subscription/renew/success', [SubscriptionController::class, 'handleRenewSuccess'])->name('subscription.renew.success');

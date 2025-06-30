@@ -6,7 +6,7 @@ use App\Http\Controllers\Web\Backend\Settings\MailSettingController;
 use App\Http\Controllers\Web\Backend\Settings\ProfileController;
 use App\Http\Controllers\Web\Backend\Settings\SocialMediaController;
 use App\Http\Controllers\Web\Backend\Settings\SystemSettingController;
-
+use App\Http\Controllers\Web\Backend\SubcriptionPriceController;
 
 //! This route is for updating the user's profile
 Route::controller(ProfileController::class)->group(function () {
@@ -46,4 +46,18 @@ Route::controller(DynamicPageController::class)->group(function () {
     Route::post('/dynamic-page/update/{id}', 'update')->name('dynamic_page.update');
     Route::get('/dynamic-page/status/{id}', 'status')->name('dynamic_page.status');
     Route::delete('/dynamic-page/destroy/{id}', 'destroy')->name('dynamic_page.destroy');
+});
+
+
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+    // Subscription Price Edit Page
+    Route::get('subscription-price', [SubcriptionPriceController::class, 'edit'])->name('subscription-price.edit');
+
+    // Subscription Price Update Action
+    Route::post('subscription-price/update', [SubcriptionPriceController::class, 'update'])->name('subscription-price.update');
+});
+
+Route::controller(SubcriptionPriceController::class)->prefix('admin')->group(function () {
+    Route::get('/subscription-price','edit')->name('subscription-price.edit');
+    Route::post('/subscription-price/update','update')->name('subscription-price.update');
 });

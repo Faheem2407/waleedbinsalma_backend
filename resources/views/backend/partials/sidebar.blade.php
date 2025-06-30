@@ -106,6 +106,15 @@
                         <span class="menu-title">Values</span>
                     </a>
                 </div>
+                <div class="menu-item">
+                    <a class="menu-link {{ request()->routeIs('subscription-price.*') ? 'active' : '' }}"
+                        href="{{ route('subscription-price.edit') }}">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-heart" style="font-size: 20px;"></i>
+                        </span>
+                        <span class="menu-title">Online Store Subcription Price</span>
+                    </a>
+                </div>
 
                 <div data-kt-menu-trigger="click"
                     class="menu-item {{ request()->routeIs(['profile.setting', 'stripe.setting', 'paypal.setting', 'dynamic_page.*', 'system.index', 'mail.setting', 'social.index']) ? 'active show' : '' }} menu-accordion">

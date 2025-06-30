@@ -31,13 +31,13 @@ class DatabaseSeeder extends Seeder
         
 
         // $this->call(ServicesSeeder::class);
-        // $this->call(ProductCategoriesSeeder::class);
-        // $this->call(ProductBrandsSeeder::class);
-        // $this->call(TeamsSeeder::class);
-        // $this->call(CatalogServiceCategoriesSeeder::class);
-        // $this->call(CatalogServicesSeeder::class);
-        // $this->call(OnlineStoresSeeder::class);
-        // $this->call(ProductsSeeder::class);
+        $this->call(ProductCategoriesSeeder::class);
+        $this->call(ProductBrandsSeeder::class);
+        $this->call(TeamsSeeder::class);
+        $this->call(CatalogServiceCategoriesSeeder::class);
+        $this->call(CatalogServicesSeeder::class);
+        $this->call(OnlineStoresSeeder::class);
+        $this->call(ProductsSeeder::class);
 
     }
 }
