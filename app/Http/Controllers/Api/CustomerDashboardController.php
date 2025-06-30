@@ -96,19 +96,6 @@ class CustomerDashboardController extends Controller
         return $this->success($data, 'Address deleted successfully', 200);
     }
 
-    // public function myFavorites()
-    // {
-    //     $user = auth()->user();
-    //     if (!$user) {
-    //         return $this->error([], 'User Not Found', 404);
-    //     }
-
-    //     $data = $user->favorites()->where('user_id', $user->id)->get();
-
-    //     return $this->success($data, 'My Favorites', 200);
-    // }
-
-
     public function myFavorites()
     {
         $user = auth()->user();
@@ -141,6 +128,7 @@ class CustomerDashboardController extends Controller
     }
 
 
+    // for multi-product at a time
     public function myProducts()
     {
         $user = auth()->user();
@@ -148,6 +136,7 @@ class CustomerDashboardController extends Controller
             return $this->error([], 'User Not Found', 404);
         }
 
+        // Fetch user's orders with order items and product details
         $orders = Order::with(['orderItems.product'])
             ->where('user_id', $user->id)
             ->get();
@@ -173,11 +162,50 @@ class CustomerDashboardController extends Controller
             ];
         });
 
+        // Return as an object
         return $this->success([
             'orders' => $orderData,
         ], 'My Ordered Products with Details', 200);
     }
 
+    // for single-product at a time
+    // public function myProducts()
+    // {
+    //     $user = auth()->user();
+    //     if (!$user) {
+    //         return $this->error([], 'User Not Found', 404);
+    //     }
 
+    //     // Load orders with product info through orderItems
+    //     $orders = Order::with(['orderItems.product'])
+    //         ->where('user_id', $user->id)
+    //         ->get();
+
+    //     $orderData = $orders->map(function ($order) {
+    //         $item = $order->orderItems->first();
+
+    //         return [
+    //             'order_id' => $order->id,
+    //             'order_total' => $order->total_amount,
+    //             'payment_method' => $order->payment_method,
+    //             'payment_status' => $order->payment_status,
+    //             'created_at' => $order->created_at,
+
+    //             'product' => [
+    //                 'product_id' => $item->product->id ?? null,
+    //                 'product_name' => $item->product->name ?? null,
+    //                 'product_description' => $item->product->description ?? null,
+    //                 'product_price' => $item->product->price ?? null,
+    //                 'ordered_quantity' => $item->quantity,
+    //                 'price_per_unit' => $item->price,
+    //                 'subtotal' => $item->quantity * $item->price,
+    //             ],
+    //         ];
+    //     });
+
+    //     return $this->success([
+    //         'orders' => $orderData,
+    //     ], 'My Ordered Products with Details', 200);
+    // }
 
 }

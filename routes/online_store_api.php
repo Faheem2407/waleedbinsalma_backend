@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\BookmarkController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CustomerDashboardController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\SubscriptionController;
 
 Route::controller(OnlineStoreController::class)->prefix('online-store')->group(function () {
     Route::post('/register', 'createOrUpdate');
@@ -64,3 +66,21 @@ Route::controller(AppointmentCreateController::class)->prefix('online-store')->g
     Route::get('/appointment/book/success', 'bookAppointmentSuccess')->name('appointment.book.success');
     Route::get('/appointment/book/cancel', 'bookAppointmentCancel')->name('appointment.book.cancel');
 });
+
+
+
+Route::group(['middleware' => ['jwt.verify']], function () {
+    Route::controller(PaymentController::class)->group(function () {
+        Route::post('/checkout', 'checkout')->name('checkout');
+    });
+    Route::post('online-store/subscription/purchase', [SubscriptionController::class, 'purchase'])->name('subscription.purchase');
+    Route::post('online-store/subscription/renew', [SubscriptionController::class, 'renew'])->name('subscription.renew');
+});
+
+Route::controller(PaymentController::class)->group(function () {
+    Route::get('/checkout-success', 'checkoutSuccess')->name('checkout.success');
+    Route::get('/checkout-cancel', 'checkoutCancel')->name('checkout.cancel');
+});
+
+Route::get('online-store/subscription/success', [SubscriptionController::class, 'success'])->name('subscription.success');
+Route::get('online-store/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');

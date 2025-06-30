@@ -57,8 +57,6 @@ class AppointmentController extends Controller
         return $this->success($data, 'Appointments fetched successfully.', 200);
     }
 
-
-
     public function rescheduleAppointment(Request $request, $id)
     {
         $request->validate([
@@ -89,8 +87,6 @@ class AppointmentController extends Controller
         return $this->success($data, 'Appointment rescheduled successfully.', 200);
     }
 
-
-
     public function cancelAppointment($id)
     {
         $appointment = Appointment::where('id', $id)
@@ -112,9 +108,6 @@ class AppointmentController extends Controller
         return $this->success([], 'Appointment cancelled successfully.', 200);
     }
 
-
-
-
     public function totalAppointmentsThisWeek()
     {
         $startOfWeek = now()->startOfWeek();
@@ -129,7 +122,5 @@ class AppointmentController extends Controller
         
         return $this->success($data, 'total appointment count fetched successfully',200);
     }
-
-
 
 }

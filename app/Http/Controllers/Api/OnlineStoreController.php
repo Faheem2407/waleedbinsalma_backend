@@ -290,9 +290,6 @@ class OnlineStoreController extends Controller
     }
 
 
-    
-
-
     public function viewProduct($id)
     {
         try {
@@ -336,7 +333,6 @@ class OnlineStoreController extends Controller
     }
 
 
-
     public function showTrendingStores(Request $request)
     {
         try {
@@ -370,7 +366,6 @@ class OnlineStoreController extends Controller
             return $this->error([], $e->getMessage(), 500);
         }
     }
-
 
 
     public function myBookingStores(Request $request)
@@ -416,8 +411,6 @@ class OnlineStoreController extends Controller
 
         return $this->success(null, 'No recently viewed stores for guests.', 200);
     }
-
-
 
 
     public function recentlyViewedStoresGuest()
