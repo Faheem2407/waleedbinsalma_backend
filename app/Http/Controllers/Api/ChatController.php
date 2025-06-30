@@ -101,7 +101,7 @@ class ChatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'message' => 'nullable|string',
-            'file'    => 'nullable|max:5120',
+            'file'    => 'nullable|max:10240',
         ]);
 
         if ($validator->fails()) {
