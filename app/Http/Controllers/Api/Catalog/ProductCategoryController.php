@@ -20,7 +20,7 @@ class ProductCategoryController extends Controller
             ->where('business_profile_id', $businessProfileId)
             ->get();
 
-        return $this->success($categories, 'Product categories fetched successfully.');
+        return $this->success($categories, 'Product categories fetched successfully.',200);
     }
 
     public function store(Request $request)
@@ -36,7 +36,7 @@ class ProductCategoryController extends Controller
 
         $category = ProductCategory::create($request->all());
 
-        return $this->success($category->load('businessProfile'), 'Product category created successfully.');
+        return $this->success($category->load('businessProfile'), 'Product category created successfully.',200);
     }
 
 
@@ -47,7 +47,7 @@ class ProductCategoryController extends Controller
             return $this->error([], 'Product category not found', 404);
         }
 
-        return $this->success($category, 'Product category fetched successfully.');
+        return $this->success($category, 'Product category fetched successfully.',200);
     }
 
     public function update(Request $request, $id)
@@ -62,12 +62,12 @@ class ProductCategoryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation Error', 422);
+            return $this->error($validator->errors(), $validator->errors()->first() , 422);
         }
 
         $category->update($request->all());
 
-        return $this->success($category->load('businessProfile'), 'Product category updated successfully.');
+        return $this->success($category->load('businessProfile'), 'Product category updated successfully.',200);
     }
 
     public function destroy($id)
@@ -78,6 +78,6 @@ class ProductCategoryController extends Controller
         }
 
         $category->delete();
-        return $this->success([], 'Product category deleted successfully.');
+        return $this->success([], 'Product category deleted successfully.',200);
     }
 }

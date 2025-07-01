@@ -31,7 +31,7 @@ class TeamController extends Controller
             return $this->error([], 'No team members found.', 404);
         }
 
-        return $this->success($teams, 'Team Members fetched successfully.');
+        return $this->success($teams, 'Team Members fetched successfully.',200);
     }
 
 
@@ -85,7 +85,7 @@ class TeamController extends Controller
             $team->teamServices()->sync($request->teamServices);
         }
 
-        return $this->success($team->load('teamAddresses', 'teamServices'), 'Team Member created successfully.');
+        return $this->success($team->load('teamAddresses', 'teamServices'), 'Team Member created successfully.',201);
     }
 
     // Show
@@ -95,7 +95,7 @@ class TeamController extends Controller
         if (!$team)
             return $this->error([], 'Team Member not found', 404);
 
-        return $this->success($team, 'Team Member fetched successfully.');
+        return $this->success($team, 'Team Member fetched successfully.',200);
     }
 
     // Update
@@ -144,7 +144,7 @@ class TeamController extends Controller
             $team->teamServices()->sync($request->teamServices);
         }
 
-        return $this->success($team->load('teamAddresses', 'teamServices'), 'Team Member updated successfully.');
+        return $this->success($team->load('teamAddresses', 'teamServices'), 'Team Member updated successfully.',200);
     }
 
     // Delete
@@ -155,7 +155,7 @@ class TeamController extends Controller
             return $this->error([], 'Team Member not found', 404);
 
         $team->delete();
-        return $this->success([], 'Team Member deleted successfully.');
+        return $this->success([], 'Team Member deleted successfully.',200);
     }
 
 

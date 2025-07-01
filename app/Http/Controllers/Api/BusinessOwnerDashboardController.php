@@ -74,38 +74,6 @@ class BusinessOwnerDashboardController extends Controller
 	        ->take(20)
 	        ->get();
 
-	    // Top services this month
-	    // $topServicesThisMonth = Appointment::where('online_store_id', $storeId)
-	    //     ->whereBetween('date', [$startOfMonth, now()])
-	    //     ->with('storeServices.catalogService')
-	    //     ->get()
-	    //     ->flatMap->storeServices
-	    //     ->groupBy('id')
-	    //     ->map(fn($services) => [
-	    //         'service_name' => optional($services->first()->service)->service_name ?? 'Unknown',
-	    //         'count' => $services->count(),
-	    //     ])
-	    //     ->sortByDesc('count')
-	    //     ->values()
-	    //     ->take(5);
-
-	    // // Top services last month
-	    // $topServicesLastMonth = Appointment::where('online_store_id', $storeId)
-	    //     ->whereBetween('date', [$startOfLastMonth, $endOfLastMonth])
-	    //     ->with('storeServices.catalogService')
-	    //     ->get()
-	    //     ->flatMap->storeServices
-	    //     ->groupBy('id')
-	    //     ->map(fn($services) => [
-	    //         'service_name' => optional($services->first()->service)->service_name ?? 'Unknown',
-	    //         'count' => $services->count(),
-	    //     ])
-	    //     ->sortByDesc('count')
-	    //     ->values()
-	    //     ->take(5);
-
-
-
 	    // Helper to count services between dates
 		$serviceCountsBetween = function ($startDate, $endDate) use ($storeId) {
 		    return Appointment::where('online_store_id', $storeId)
@@ -165,8 +133,6 @@ class BusinessOwnerDashboardController extends Controller
 	        'total_canceled' => $totalCanceled,
 	        'todays_appointments' => $todaysAppointments,
 	        'appointment_activities' => $appointmentActivities,
-	        // 'top_services_this_month' => $topServicesThisMonth,
-	        // 'top_services_last_month' => $topServicesLastMonth,
 	        'top_services' => $topServices,
 	        'recent_sales_last_7_days' => $recentSalesLast7Days,
 	    ];

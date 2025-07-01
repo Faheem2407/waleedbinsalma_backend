@@ -20,7 +20,7 @@ class ProductBrandController extends Controller
             ->where('business_profile_id', $businessProfileId)
             ->get();
 
-        return $this->success($brands, 'Product brands fetched successfully.');
+        return $this->success($brands, 'Product brands fetched successfully.',200);
     }
 
 
@@ -37,7 +37,7 @@ class ProductBrandController extends Controller
 
         $brand = ProductBrand::create($request->all());
 
-        return $this->success($brand->load('businessProfile'), 'Product brand created successfully.');
+        return $this->success($brand->load('businessProfile'), 'Product brand created successfully.',201);
     }
 
 
@@ -48,7 +48,7 @@ class ProductBrandController extends Controller
             return $this->error([], 'Product brand not found', 404);
         }
 
-        return $this->success($brand, 'Product brand fetched successfully.');
+        return $this->success($brand, 'Product brand fetched successfully.',200);
     }
 
 
@@ -64,12 +64,12 @@ class ProductBrandController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation Error', 422);
+            return $this->error($validator->errors(), $validator->errors()->first(), 422);
         }
 
         $brand->update($request->all());
 
-        return $this->success($brand->load('businessProfile'), 'Product brand updated successfully.');
+        return $this->success($brand->load('businessProfile'), 'Product brand updated successfully.',200);
     }
 
     public function destroy($id)
@@ -80,6 +80,6 @@ class ProductBrandController extends Controller
         }
 
         $brand->delete();
-        return $this->success([], 'Product brand deleted successfully.');
+        return $this->success([], 'Product brand deleted successfully.',200);
     }
 }
