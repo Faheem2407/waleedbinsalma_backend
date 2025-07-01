@@ -15,8 +15,10 @@ class TeamController extends Controller
     public function index(Request $request)
     {
         $query = $request->query('query');
+        $businessProfileId = auth()->user()->businessProfile->id;
 
         $teams = Team::with(['teamAddresses', 'teamServices'])
+            ->where('business_profile_id', $businessProfileId)
             ->when($query, function ($q) use ($query) {
                 $q->where(function ($subQuery) use ($query) {
                     $subQuery->where('first_name', 'like', '%' . $query . '%')
@@ -31,6 +33,7 @@ class TeamController extends Controller
 
         return $this->success($teams, 'Team Members fetched successfully.');
     }
+
 
 
     public function store(Request $request)

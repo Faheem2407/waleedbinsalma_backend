@@ -12,14 +12,17 @@ class ProductCategoryController extends Controller
 {
     use ApiResponse;
 
-    // GET /product-categories
     public function index()
     {
-        $categories = ProductCategory::with('businessProfile')->get();
+        $businessProfileId = auth()->user()->businessProfile->id;
+
+        $categories = ProductCategory::with('businessProfile')
+            ->where('business_profile_id', $businessProfileId)
+            ->get();
+
         return $this->success($categories, 'Product categories fetched successfully.');
     }
 
-    // POST /product-categories
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -36,7 +39,7 @@ class ProductCategoryController extends Controller
         return $this->success($category->load('businessProfile'), 'Product category created successfully.');
     }
 
-    // GET /product-categories/{id}
+
     public function show($id)
     {
         $category = ProductCategory::with('businessProfile')->find($id);
@@ -47,7 +50,6 @@ class ProductCategoryController extends Controller
         return $this->success($category, 'Product category fetched successfully.');
     }
 
-    // PUT /product-categories/{id}
     public function update(Request $request, $id)
     {
         $category = ProductCategory::find($id);
@@ -68,7 +70,6 @@ class ProductCategoryController extends Controller
         return $this->success($category->load('businessProfile'), 'Product category updated successfully.');
     }
 
-    // DELETE /product-categories/{id}
     public function destroy($id)
     {
         $category = ProductCategory::find($id);

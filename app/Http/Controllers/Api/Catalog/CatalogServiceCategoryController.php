@@ -20,7 +20,7 @@ class CatalogServiceCategoryController extends Controller
 
 	    $businessProfileId = auth()->user()->businessProfile->id;
 
-	    $categories = CatalogServiceCategory::where('business_profile_id', $businessProfileId) // 🔐 Filter by logged-in user's business
+	    $categories = CatalogServiceCategory::where('business_profile_id', $businessProfileId)
 	        ->withCount([
 	            'catalogServices as filtered_services_count' => function ($query) use ($teamId, $searchQuery) {
 	                $query->when($teamId, function ($q) use ($teamId) {

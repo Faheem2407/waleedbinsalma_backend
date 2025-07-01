@@ -14,8 +14,11 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        $query = Product::with(['businessProfile', 'category', 'brand']);
+        $businessProfileId = auth()->user()->businessProfile->id;
 
+        $query = Product::with(['businessProfile', 'category', 'brand'])
+            ->where('business_profile_id', $businessProfileId); 
+            
         // filters
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
@@ -49,6 +52,7 @@ class ProductController extends Controller
 
         return $this->success($products, 'Products fetched successfully.');
     }
+
 
 
     public function store(Request $request)

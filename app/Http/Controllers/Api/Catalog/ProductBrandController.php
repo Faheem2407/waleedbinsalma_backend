@@ -12,14 +12,18 @@ class ProductBrandController extends Controller
 {
     use ApiResponse;
 
-    // GET /product-brands
     public function index()
     {
-        $brands = ProductBrand::with('businessProfile')->get();
+        $businessProfileId = auth()->user()->businessProfile->id;
+
+        $brands = ProductBrand::with('businessProfile')
+            ->where('business_profile_id', $businessProfileId)
+            ->get();
+
         return $this->success($brands, 'Product brands fetched successfully.');
     }
 
-    // POST /product-brands
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -36,7 +40,7 @@ class ProductBrandController extends Controller
         return $this->success($brand->load('businessProfile'), 'Product brand created successfully.');
     }
 
-    // GET /product-brands/{id}
+
     public function show($id)
     {
         $brand = ProductBrand::with('businessProfile')->find($id);
@@ -47,7 +51,7 @@ class ProductBrandController extends Controller
         return $this->success($brand, 'Product brand fetched successfully.');
     }
 
-    // PUT /product-brands/{id}
+
     public function update(Request $request, $id)
     {
         $brand = ProductBrand::find($id);
@@ -68,7 +72,6 @@ class ProductBrandController extends Controller
         return $this->success($brand->load('businessProfile'), 'Product brand updated successfully.');
     }
 
-    // DELETE /product-brands/{id}
     public function destroy($id)
     {
         $brand = ProductBrand::find($id);
