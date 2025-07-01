@@ -12,61 +12,64 @@ class CatalogServiceCategoryController extends Controller
 {
     use ApiResponse;
 
-
 	public function catalogServiceCategoriesCount(Request $request)
 	{
-		$teamId = $request->team_member;
-		$catalog_service_category_Id = $request->catalog_service_category_id;
-		$searchQuery = $request->input('query');
+	    $teamId = $request->team_member;
+	    $catalog_service_category_Id = $request->catalog_service_category_id;
+	    $searchQuery = $request->input('query');
 
-		$categories = CatalogServiceCategory::withCount([
-			'catalogServices as filtered_services_count' => function ($query) use ($teamId, $searchQuery) {
-				$query->when($teamId, function ($q) use ($teamId) {
-					$q->whereHas('teams', function ($q2) use ($teamId) {
-						$q2->where('teams.id', $teamId);
-					});
-				})
-				->when($searchQuery, function ($q) use ($searchQuery) {
-					$q->where(function ($q2) use ($searchQuery) {
-						$q2->where('name', 'like', "%{$searchQuery}%")
-							->orWhere('description', 'like', "%{$searchQuery}%");
-					});
-				});
-			}
-		])
-		->with([
-			'catalogServices' => function ($query) use ($teamId, $searchQuery) {
-				$query->select('id', 'name', 'duration', 'price', 'catalog_service_category_id')
-					->when($teamId, function ($q) use ($teamId) {
-						$q->whereHas('teams', function ($q2) use ($teamId) {
-							$q2->where('teams.id', $teamId);
-						});
-					})
-					->when($searchQuery, function ($q) use ($searchQuery) {
-						$q->where(function ($q2) use ($searchQuery) {
-							$q2->where('name', 'like', "%{$searchQuery}%")
-								->orWhere('description', 'like', "%{$searchQuery}%");
-						});
-					});
-			}
-		])
-		->when($catalog_service_category_Id, function ($query) use ($catalog_service_category_Id) {
-			$query->where('id', $catalog_service_category_Id);
-		})
-		->get();
+	    $businessProfileId = auth()->user()->businessProfile->id;
 
-		if ($searchQuery || $teamId) {
-			$categories = $categories->filter(function ($category) {
-				return $category->filtered_services_count > 0;
-			})->values();
-		}
+	    $categories = CatalogServiceCategory::where('business_profile_id', $businessProfileId) // 🔐 Filter by logged-in user's business
+	        ->withCount([
+	            'catalogServices as filtered_services_count' => function ($query) use ($teamId, $searchQuery) {
+	                $query->when($teamId, function ($q) use ($teamId) {
+	                    $q->whereHas('teams', function ($q2) use ($teamId) {
+	                        $q2->where('teams.id', $teamId);
+	                    });
+	                })
+	                ->when($searchQuery, function ($q) use ($searchQuery) {
+	                    $q->where(function ($q2) use ($searchQuery) {
+	                        $q2->where('name', 'like', "%{$searchQuery}%")
+	                            ->orWhere('description', 'like', "%{$searchQuery}%");
+	                    });
+	                });
+	            }
+	        ])
+	        ->with([
+	            'catalogServices' => function ($query) use ($teamId, $searchQuery) {
+	                $query->select('id', 'name', 'duration', 'price', 'catalog_service_category_id')
+	                    ->when($teamId, function ($q) use ($teamId) {
+	                        $q->whereHas('teams', function ($q2) use ($teamId) {
+	                            $q2->where('teams.id', $teamId);
+	                        });
+	                    })
+	                    ->when($searchQuery, function ($q) use ($searchQuery) {
+	                        $q->where(function ($q2) use ($searchQuery) {
+	                            $q2->where('name', 'like', "%{$searchQuery}%")
+	                                ->orWhere('description', 'like', "%{$searchQuery}%");
+	                        });
+	                    });
+	            }
+	        ])
+	        ->when($catalog_service_category_Id, function ($query) use ($catalog_service_category_Id) {
+	            $query->where('id', $catalog_service_category_Id);
+	        })
+	        ->get();
 
-		if ($categories->isEmpty()) {
-			return $this->error([], 'No catalog services found.', 404);
-		}
+	    if ($searchQuery || $teamId) {
+	        $categories = $categories->filter(function ($category) {
+	            return $category->filtered_services_count > 0;
+	        })->values();
+	    }
 
-		return $this->success($categories, 'Catalog Service Categories fetch Successful!', 200);
+	    if ($categories->isEmpty()) {
+	        return $this->error([], 'No catalog services found.', 404);
+	    }
+
+	    return $this->success($categories, 'Catalog Service Categories fetch Successful!', 200);
 	}
+
 
 
     public function addCategory(Request $request)

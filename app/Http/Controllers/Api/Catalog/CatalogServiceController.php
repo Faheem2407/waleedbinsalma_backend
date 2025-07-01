@@ -12,12 +12,18 @@ use Illuminate\Support\Facades\Validator;
 class CatalogServiceController extends Controller
 {
     use ApiResponse;
+
     public function index()
     {
-        $services = CatalogService::with(['category', 'businessProfile', 'service'])->get();
+        $businessProfileId = auth()->user()->businessProfile->id;
+
+        $services = CatalogService::with(['category', 'businessProfile', 'service'])
+            ->where('business_profile_id', $businessProfileId)
+            ->get();
 
         return $this->success($services, 'Catalog Services fetched successfully', 200);
     }
+
 
     public function store(Request $request)
     {
