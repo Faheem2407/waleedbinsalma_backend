@@ -39,7 +39,7 @@ class CatalogServiceController extends Controller
             'description' => 'required|string',
             'duration' => 'required|string',
             'price_type' => 'required|string',
-            'price' => 'required|string',
+            'price' => 'required|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -56,10 +56,6 @@ class CatalogServiceController extends Controller
             'price_type',
             'price',
         ]));
-
-        if($service->isEmpty()){
-            return $this->error([],'Catalog Service failed to create',500);
-        }
 
         return $this->success($service, 'Catalog Service created successfully!', 201);
     }
@@ -81,7 +77,7 @@ class CatalogServiceController extends Controller
             'description' => 'sometimes|string',
             'duration' => 'sometimes|string',
             'price_type' => 'sometimes|string',
-            'price' => 'sometimes|string',
+            'price' => 'sometimes|integer|min:0',
         ]);
 
         if ($validator->fails()) {
