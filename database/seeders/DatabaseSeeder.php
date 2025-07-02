@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SystemSettingSeeder::class);
         $this->call(DynamicPageSeeder::class);
         $this->call(FaqSeeder::class);
+        $this->call(ServiceTypeSeeder::class);
         $this->call(BusinessProfileSeeder::class);
         $this->call(BusinessHomeSeeder::class);
         $this->call(BusinessPricingSeeder::class);
@@ -29,14 +30,14 @@ class DatabaseSeeder extends Seeder
         $this->call(ValuesSeeder::class);
         
 
-        $this->call(ServicesSeeder::class);
-        $this->call(ProductCategoriesSeeder::class);
-        $this->call(ProductBrandsSeeder::class);
-        $this->call(TeamsSeeder::class);
-        $this->call(CatalogServiceCategoriesSeeder::class);
-        $this->call(CatalogServicesSeeder::class);
-        $this->call(OnlineStoresSeeder::class);
-        $this->call(ProductsSeeder::class);
+        // $this->call(ServicesSeeder::class);
+        // $this->call(ProductCategoriesSeeder::class);
+        // $this->call(ProductBrandsSeeder::class);
+        // $this->call(TeamsSeeder::class);
+        // $this->call(CatalogServiceCategoriesSeeder::class);
+        // $this->call(CatalogServicesSeeder::class);
+        // $this->call(OnlineStoresSeeder::class);
+        // $this->call(ProductsSeeder::class);
 
     }
 }

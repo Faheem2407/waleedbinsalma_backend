@@ -22,15 +22,17 @@ class UserController extends Controller
 
     public function userData()
     {
-
         $user = User::where('id', auth()->user()->id)->first();
 
-        if ($user->role == "business") {
-            $user = User::where('id', auth()->user()->id)
-                ->with('businessProfile.onlineStore.storeImages', 'businessProfile.onlineStore.openingHours', 'businessProfile.onlineStore.storeAmenities.amenity', 'businessProfile.onlineStore.storeHighlights.highlight', 'businessProfile.onlineStore.storeValues.value', 'businessProfile.onlineStore.storeServices.catalogService', 'businessProfile.onlineStore.storeTeams.team', 'businessProfile.businessDocument', 'businessProfile.businessServices.service:id,service_name', 'businessProfile.bankDetail')->first();
+         if (!$user) {
+            return $this->error([], 'User not found', 404);
         }
-        if (!$user) {
-            return $this->error([], 'User Not Found', 404);
+
+        if ($user->role == "business") {
+            $user = User::where('id', $user->id)
+                ->with('businessProfile.onlineStore.storeImages', 'businessProfile.onlineStore.openingHours', 'businessProfile.onlineStore.storeAmenities.amenity', 'businessProfile.onlineStore.storeHighlights.highlight', 'businessProfile.onlineStore.storeValues.value', 'businessProfile.onlineStore.storeServices.catalogService', 'businessProfile.onlineStore.storeTeams.team', 'businessProfile.businessDocument', 'businessProfile.businessServices.service:id,service_name', 'businessProfile.bankDetail')->first();
+        }else{
+            $user = User::where('id', $user->id)->first();
         }
 
         return $this->success($user, 'User data fetched successfully', 200);

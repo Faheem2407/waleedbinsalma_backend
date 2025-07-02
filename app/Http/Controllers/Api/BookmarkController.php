@@ -38,9 +38,6 @@ class BookmarkController extends Controller
         }
     }
 
-    /**
-     * Remove a bookmark
-     */
     public function remove(Request $request)
     {
         $request->validate([

@@ -31,7 +31,7 @@
                         <th>Client Avatar</th>
                         <th>Review</th>
                         <th>Rating</th>
-                        <th>Shop Name</th>
+                        <th>User Name</th>
                         <th>Status</th>
                         <th style="width: 120px;">Actions</th>
                     </tr>

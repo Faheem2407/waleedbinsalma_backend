@@ -12,14 +12,18 @@ class ProductBrandController extends Controller
 {
     use ApiResponse;
 
-    // GET /product-brands
     public function index()
     {
-        $brands = ProductBrand::with('businessProfile')->get();
-        return $this->success($brands, 'Product brands fetched successfully.');
+        $businessProfileId = auth()->user()->businessProfile->id;
+
+        $brands = ProductBrand::with('businessProfile')
+            ->where('business_profile_id', $businessProfileId)
+            ->get();
+
+        return $this->success($brands, 'Product brands fetched successfully.',200);
     }
 
-    // POST /product-brands
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -33,10 +37,10 @@ class ProductBrandController extends Controller
 
         $brand = ProductBrand::create($request->all());
 
-        return $this->success($brand->load('businessProfile'), 'Product brand created successfully.');
+        return $this->success($brand->load('businessProfile'), 'Product brand created successfully.',201);
     }
 
-    // GET /product-brands/{id}
+
     public function show($id)
     {
         $brand = ProductBrand::with('businessProfile')->find($id);
@@ -44,10 +48,10 @@ class ProductBrandController extends Controller
             return $this->error([], 'Product brand not found', 404);
         }
 
-        return $this->success($brand, 'Product brand fetched successfully.');
+        return $this->success($brand, 'Product brand fetched successfully.',200);
     }
 
-    // PUT /product-brands/{id}
+
     public function update(Request $request, $id)
     {
         $brand = ProductBrand::find($id);
@@ -60,15 +64,14 @@ class ProductBrandController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation Error', 422);
+            return $this->error($validator->errors(), $validator->errors()->first(), 422);
         }
 
         $brand->update($request->all());
 
-        return $this->success($brand->load('businessProfile'), 'Product brand updated successfully.');
+        return $this->success($brand->load('businessProfile'), 'Product brand updated successfully.',200);
     }
 
-    // DELETE /product-brands/{id}
     public function destroy($id)
     {
         $brand = ProductBrand::find($id);
@@ -77,6 +80,6 @@ class ProductBrandController extends Controller
         }
 
         $brand->delete();
-        return $this->success([], 'Product brand deleted successfully.');
+        return $this->success([], 'Product brand deleted successfully.',200);
     }
 }

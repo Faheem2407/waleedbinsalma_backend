@@ -12,12 +12,22 @@ use Illuminate\Support\Facades\Validator;
 class CatalogServiceController extends Controller
 {
     use ApiResponse;
+
     public function index()
     {
-        $services = CatalogService::with(['category', 'businessProfile', 'service'])->get();
+        $businessProfileId = auth()->user()->businessProfile->id;
+
+        $services = CatalogService::with(['category', 'businessProfile', 'service'])
+            ->where('business_profile_id', $businessProfileId)
+            ->get();
+
+        if($services->isEmpty()){
+            return $this->error([],'Catalog Services not found',404);
+        }
 
         return $this->success($services, 'Catalog Services fetched successfully', 200);
     }
+
 
     public function store(Request $request)
     {
@@ -33,7 +43,7 @@ class CatalogServiceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation Error', 422);
+            return $this->error($validator->errors(), $validator->errors()->first() , 422);
         }
 
         $service = CatalogService::create($request->only([
@@ -46,6 +56,10 @@ class CatalogServiceController extends Controller
             'price_type',
             'price',
         ]));
+
+        if($service->isEmpty()){
+            return $this->error([],'Catalog Service failed to create',500);
+        }
 
         return $this->success($service, 'Catalog Service created successfully!', 201);
     }
@@ -71,7 +85,7 @@ class CatalogServiceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation Error', 422);
+            return $this->error($validator->errors(), $validator->errors()->first() , 422);
         }
 
         $service->update($request->only([
@@ -168,6 +182,6 @@ class CatalogServiceController extends Controller
             return $this->error([], 'No catalog services found.', 404);
         }
 
-        return $this->success($services, 'Catalog services filtered successfully.');
+        return $this->success($services, 'Catalog services filtered successfully.',200);
     }
 }

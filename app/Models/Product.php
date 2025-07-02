@@ -29,4 +29,10 @@ class Product extends Model
     {
         return $this->belongsTo(ProductBrand::class, 'brand_id');
     }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
 }

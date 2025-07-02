@@ -53,59 +53,51 @@ class AppointmentReviewController extends Controller
         return $this->success($review, 'Review submitted successfully.', 201);
     }
 
+    public function storeReviews(Request $request)
+    {
+        $request->validate([
+            'online_store_id' => 'required|exists:online_stores,id',
+            'rating' => 'nullable|in:1,2,3,4,5,all',
+            'search' => 'nullable|string|max:255',
+        ]);
 
+        $user = Auth::user();
 
+        if (!$user) {
+            return $this->error([], 'Unauthorized access. Please login first.', 401);
+        }
 
-public function storeReviews(Request $request)
-{
-    $request->validate([
-        'online_store_id' => 'required|exists:online_stores,id',
-        'rating' => 'nullable|in:1,2,3,4,5,all',
-        'search' => 'nullable|string|max:255',
-    ]);
+        $store = OnlineStore::with('businessProfile')->find($request->online_store_id);
 
-    $user = Auth::user();
+        if (!$store || !$store->businessProfile || $store->businessProfile->user_id !== $user->id) {
+            return $this->error([], 'You do not have permission to view reviews for this store.', 403);
+        }
 
-    if (!$user) {
-        return $this->error([], 'Unauthorized access. Please login first.', 401);
-    }
-
-    $store = OnlineStore::with('businessProfile')->find($request->online_store_id);
-
-    if (!$store || !$store->businessProfile || $store->businessProfile->user_id !== $user->id) {
-        return $this->error([], 'You do not have permission to view reviews for this store.', 403);
-    }
-
-    $query = Review::with([
+        $query = Review::with([
             'user:id,first_name,last_name,email,avatar',
             'appointment.appointmentServices.catalogService:id,name,price,duration'
         ])
-        ->where('online_store_id', $store->id);
+            ->where('online_store_id', $store->id);
 
-    // Filter by rating if provided
-    if ($request->filled('rating') && $request->rating !== 'all') {
-        $query->where('rating', $request->rating);
-    }
+        // Filter by rating if provided
+        if ($request->filled('rating') && $request->rating !== 'all') {
+            $query->where('rating', $request->rating);
+        }
 
-    // Filter by user name (who gave the review)
-    if ($request->filled('search')) {
-    $searchTerm = $request->search;
-    $query->whereHas('user', function ($q) use ($searchTerm) {
-            $q->where(function ($subQuery) use ($searchTerm) {
-                $subQuery->where('first_name', 'like', '%' . $searchTerm . '%')
-                         ->orWhere('last_name', 'like', '%' . $searchTerm . '%');
+        // Filter by user name (who gave the review)
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->whereHas('user', function ($q) use ($searchTerm) {
+                $q->where(function ($subQuery) use ($searchTerm) {
+                    $subQuery->where('first_name', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('last_name', 'like', '%' . $searchTerm . '%');
+                });
             });
-        });
+        }
+
+
+        $reviews = $query->latest()->get();
+
+        return $this->success($reviews, 'Filtered store reviews fetched successfully.', 200);
     }
-
-
-    $reviews = $query->latest()->get();
-
-    return $this->success($reviews, 'Filtered store reviews fetched successfully.', 200);
-}
-
-
-
-
-
 }
