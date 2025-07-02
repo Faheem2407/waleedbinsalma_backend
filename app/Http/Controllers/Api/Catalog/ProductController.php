@@ -14,8 +14,11 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        $query = Product::with(['businessProfile', 'category', 'brand']);
+        $businessProfileId = auth()->user()->businessProfile->id;
 
+        $query = Product::with(['businessProfile', 'category', 'brand'])
+            ->where('business_profile_id', $businessProfileId); 
+            
         // filters
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
@@ -47,8 +50,9 @@ class ProductController extends Controller
 
         $products = $query->get();
 
-        return $this->success($products, 'Products fetched successfully.');
+        return $this->success($products, 'Products fetched successfully.',200);
     }
+
 
 
     public function store(Request $request)
@@ -70,7 +74,7 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation Error', 422);
+            return $this->error($validator->errors(),$validator->errors()->first(), 422);
         }
 
         $data = $request->except('image_url');
@@ -84,7 +88,7 @@ class ProductController extends Controller
 
         $product = Product::create($data);
 
-        return $this->success($product->load(['businessProfile', 'category', 'brand']), 'Product created successfully.');
+        return $this->success($product->load(['businessProfile', 'category', 'brand']), 'Product created successfully.',201);
     }
 
 
@@ -95,7 +99,7 @@ class ProductController extends Controller
             return $this->error([], 'Product not found', 404);
         }
 
-        return $this->success($product, 'Product fetched successfully.');
+        return $this->success($product, 'Product fetched successfully.',200);
     }
 
 
@@ -136,7 +140,7 @@ class ProductController extends Controller
 
         $product->update($data);
 
-        return $this->success($product->load(['businessProfile', 'category', 'brand']), 'Product updated successfully.');
+        return $this->success($product->load(['businessProfile', 'category', 'brand']), 'Product updated successfully.',200);
     }
 
 
@@ -148,6 +152,6 @@ class ProductController extends Controller
         }
 
         $product->delete();
-        return $this->success([], 'Product deleted successfully.');
+        return $this->success([], 'Product deleted successfully.',200);
     }
 }

@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\AppointmentController;
 
 Route::controller(BusinessOwnerDashboardController::class)->prefix('/business-owner')->group(function () {
     Route::get('/appointments/analytics', 'appointmentAnalytics');
-    // Route::post('/daily-sales','productSalesAnalytics');
     Route::get('/clients/analytics','clientAnalytics');
     Route::get('/appointments','appointmentList');
     Route::get('/products','productList');
