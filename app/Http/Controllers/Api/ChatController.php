@@ -41,7 +41,7 @@ class ChatController extends Controller
             });
         }
 
-         $data = $query->get()->sortByDesc(function ($conversation) {
+        $data = $query->get()->sortByDesc(function ($conversation) {
             return optional($conversation->lastMessage)->created_at;
         })->values();
 
