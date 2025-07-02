@@ -57,10 +57,6 @@ class CatalogServiceController extends Controller
             'price',
         ]));
 
-        if($service->isEmpty()){
-            return $this->error([],'Catalog Service failed to create',500);
-        }
-
         return $this->success($service, 'Catalog Service created successfully!', 201);
     }
 
