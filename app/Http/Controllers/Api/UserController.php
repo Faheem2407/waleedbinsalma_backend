@@ -22,41 +22,17 @@ class UserController extends Controller
 
     public function userData()
     {
-        $authUser = auth()->user();
+        $user = User::where('id', auth()->user()->id)->first();
 
-        if (!$authUser) {
-            return $this->error([], 'Unauthenticated', 401);
-        }
-
-        // Base query
-        $query = User::where('id', $authUser->id);
-
-        // Load extra relations if user is business
-        if ($authUser->role === 'business') {
-            $query->with([
-                'businessProfile.onlineStore.storeImages',
-                'businessProfile.onlineStore.openingHours',
-                'businessProfile.onlineStore.storeAmenities.amenity',
-                'businessProfile.onlineStore.storeHighlights.highlight',
-                'businessProfile.onlineStore.storeValues.value',
-                'businessProfile.onlineStore.storeServices.catalogService',
-                'businessProfile.onlineStore.storeTeams.team',
-                'businessProfile.businessDocument',
-                'businessProfile.businessServices',
-                'businessProfile.bankDetail',
-                'addresses'
-            ]);
-        } else {
-            // Load relations for non-business users
-            $query->with([
-                'addresses'
-            ]);
-        }
-
-        $user = $query->first();
-
-        if (!$user) {
+         if (!$user) {
             return $this->error([], 'User not found', 404);
+        }
+
+        if ($user->role == "business") {
+            $user = User::where('id', $user->id)
+                ->with('businessProfile.onlineStore.storeImages', 'businessProfile.onlineStore.openingHours', 'businessProfile.onlineStore.storeAmenities.amenity', 'businessProfile.onlineStore.storeHighlights.highlight', 'businessProfile.onlineStore.storeValues.value', 'businessProfile.onlineStore.storeServices.catalogService', 'businessProfile.onlineStore.storeTeams.team', 'businessProfile.businessDocument', 'businessProfile.businessServices.service:id,service_name', 'businessProfile.bankDetail')->first();
+        }else{
+            $user = User::where('id', $user->id)->first();
         }
 
         return $this->success($user, 'User data fetched successfully', 200);
