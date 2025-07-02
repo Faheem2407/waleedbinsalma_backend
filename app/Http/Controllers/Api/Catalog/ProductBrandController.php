@@ -32,7 +32,7 @@ class ProductBrandController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation Error', 422);
+            return $this->error($validator->errors(), $validator->errors()->first() , 422);
         }
 
         $brand = ProductBrand::create($request->all());
