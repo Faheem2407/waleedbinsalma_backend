@@ -101,7 +101,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
     });
 
     Route::controller(AppointmentReviewController::class)->prefix('appointment/review')->group(function () {
-        Route::post('/submit','submitReview');
-        Route::get('/all','storeReviews');
+        Route::post('/submit', 'submitReview');
+        Route::get('/all', 'storeReviews');
     });
 });
