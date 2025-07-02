@@ -18,7 +18,7 @@ Route::controller(OnlineStoreController::class)->prefix('online-store')->group(f
     Route::get('/product/{id}', 'viewProduct');
     Route::get('/trending',  'showTrendingStores');
     Route::group(['middleware' => ['guest']], function () {
-        Route::get('/recently-viewed','recentlyViewedStores');
+        Route::get('/recently-viewed', 'recentlyViewedStores');
         Route::get('/show-details/{id}', 'showOnlineStoreDetails');
     });
 });
@@ -52,7 +52,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('/appointment/book', 'bookAppointment');
     });
 
-    Route::controller(OnlineStoreController::class)->prefix('online-store')->group(function() {
+    Route::controller(OnlineStoreController::class)->prefix('online-store')->group(function () {
         Route::get('/my-bookings', 'myBookingStores');
     });
 });
@@ -65,22 +65,22 @@ Route::controller(AppointmentCreateController::class)->prefix('online-store')->g
 
 Route::group(['middleware' => ['jwt.verify']], function () {
     Route::controller(PaymentController::class)->group(function () {
-        Route::post('/checkout', 'checkout')->name('checkout');
+        Route::post('/ad/checkout', 'checkout')->name('checkout');
     });
-    Route::controller(SubscriptionController::class)->group(function() {
-        Route::post('online-store/subscription/purchase','purchase')->name('subscription.purchase');
-        Route::post('online-store/subscription/renew','renew')->name('subscription.renew');
+    Route::controller(SubscriptionController::class)->group(function () {
+        Route::post('online-store/subscription/purchase', 'purchase')->name('subscription.purchase');
+        Route::post('online-store/subscription/renew', 'renew')->name('subscription.renew');
     });
 });
 
 Route::controller(PaymentController::class)->group(function () {
-    Route::get('/checkout-success', 'checkoutSuccess')->name('checkout.success');
-    Route::get('/checkout-cancel', 'checkoutCancel')->name('checkout.cancel');
+    Route::get('/ad/checkout-success', 'checkoutSuccess')->name('checkout.success');
+    Route::get('/ad/checkout-cancel', 'checkoutCancel')->name('checkout.cancel');
 });
 
 
 Route::controller(SubscriptionController::class)->group(function () {
-    Route::get('online-store/subscription/success','handleSuccess')->name('subscription.success');
-    Route::get('online-store/subscription/cancel','handleCancel')->name('subscription.cancel');
-    Route::get('online-store/subscription/renew/success','handleRenewSuccess')->name('subscription.renew.success');
+    Route::get('online-store/subscription/success', 'handleSuccess')->name('subscription.success');
+    Route::get('online-store/subscription/cancel', 'handleCancel')->name('subscription.cancel');
+    Route::get('online-store/subscription/renew/success', 'handleRenewSuccess')->name('subscription.renew.success');
 });
