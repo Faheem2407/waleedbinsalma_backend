@@ -157,6 +157,4 @@ class TeamController extends Controller
         $team->delete();
         return $this->success([], 'Team Member deleted successfully.',200);
     }
-
-
 }

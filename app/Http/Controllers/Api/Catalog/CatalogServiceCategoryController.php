@@ -121,31 +121,29 @@ class CatalogServiceCategoryController extends Controller
     }
 
     public function showCategory($id)
-	{
-	    $category = CatalogServiceCategory::find($id);
+    {
+        $category = CatalogServiceCategory::find($id);
 
-	    if (!$category) {
-	        return $this->error([], 'Catalog Service Category not found', 404);
-	    }
+        if (!$category) {
+            return $this->error([], 'Catalog Service Category not found', 404);
+        }
 
-	    return $this->success($category, 'Catalog Service Category details retrieved successfully!', 200);
-	}
+        return $this->success($category, 'Catalog Service Category details retrieved successfully!', 200);
+    }
 
 
     public function deleteCategory($id)
-	{
-	    $category = CatalogServiceCategory::find($id);
+    {
+        $category = CatalogServiceCategory::find($id);
 
-	    if (!$category) {
-	        return $this->error([], 'Catalog Service Category not found', 404);
-	    }
+        if (!$category) {
+            return $this->error([], 'Catalog Service Category not found', 404);
+        }
 
-	    if (!$category->delete()) {
-	        return $this->error([], 'Failed to delete Catalog Service Category', 500);
-	    }
+        if (!$category->delete()) {
+            return $this->error([], 'Failed to delete Catalog Service Category', 500);
+        }
 
-	    return $this->success([], 'Catalog Service Category deleted successfully!', 200);
-	}
-
-
+        return $this->success([], 'Catalog Service Category deleted successfully!', 200);
+    }
 }

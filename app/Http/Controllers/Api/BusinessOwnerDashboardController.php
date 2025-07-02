@@ -243,7 +243,7 @@ class BusinessOwnerDashboardController extends Controller
 	                    'service_name' => optional($storeService->catalogService)->name ?? 'Unknown',
 	                    'price' => optional($storeService->catalogService)->price ?? 0,
 	                    'duration' => optional($storeService->catalogService)->duration ?? 'N/A'
-	                    
+
 	                ];
 	            }),
 	            'status' => $appointment->status,
