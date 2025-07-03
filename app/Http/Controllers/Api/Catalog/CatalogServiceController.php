@@ -21,10 +21,6 @@ class CatalogServiceController extends Controller
             ->where('business_profile_id', $businessProfileId)
             ->get();
 
-        if($services->isEmpty()){
-            return $this->error([],'Catalog Services not found',404);
-        }
-
         return $this->success($services, 'Catalog Services fetched successfully', 200);
     }
 
@@ -152,10 +148,6 @@ class CatalogServiceController extends Controller
             ->orWhere('description', 'like', "%{$query}%")
             ->get();
 
-        if ($services->isEmpty()) {
-            return $this->error([], 'No catalog services found.', 404);
-        }
-
         return $this->success($services, 'Catalog services search result.', 200);
     }
 
@@ -173,10 +165,6 @@ class CatalogServiceController extends Controller
             ->when($catalog_service_category_Id, function ($query) use ($catalog_service_category_Id) {
                 $query->where('catalog_service_category_id', $catalog_service_category_Id);
             })->get();
-
-        if ($services->isEmpty()) {
-            return $this->error([], 'No catalog services found.', 404);
-        }
 
         return $this->success($services, 'Catalog services filtered successfully.',200);
     }
