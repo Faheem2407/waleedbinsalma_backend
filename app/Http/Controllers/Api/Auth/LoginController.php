@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\BusinessBankDetails;
 
 class LoginController extends Controller
 {
@@ -89,6 +90,7 @@ class LoginController extends Controller
         $userData = User::with('businessProfile')->where('email', $request->email)->first();
 
         if ($userData && Hash::check($request->password, $userData->password)) {
+
             // if($userData->email_verified_at == null) {
 
             //     $this->verifyOTP($userData);
@@ -108,6 +110,15 @@ class LoginController extends Controller
                     $userData->setAttribute('flag', false);
                 } else {
                     $userData->setAttribute('flag', true);
+                    $bankDetailsExist = BusinessBankDetails::where('business_profile_id', $userData->businessProfile->id)->exists();
+
+                    if ($bankDetailsExist) {
+                        // Bank details exist
+                        $userData->setAttribute('bank_connected', true);
+                    } else {
+                        // Bank details do not exist
+                        $userData->setAttribute('bank_connected', false);
+                    }
                 }
             }
 
