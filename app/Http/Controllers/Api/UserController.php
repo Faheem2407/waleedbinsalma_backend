@@ -32,7 +32,7 @@ class UserController extends Controller
             $user = User::where('id', $user->id)
                 ->with('businessProfile.onlineStore.storeImages', 'businessProfile.onlineStore.openingHours', 'businessProfile.onlineStore.storeAmenities.amenity', 'businessProfile.onlineStore.storeHighlights.highlight', 'businessProfile.onlineStore.storeValues.value', 'businessProfile.onlineStore.storeServices.catalogService', 'businessProfile.onlineStore.storeTeams.team', 'businessProfile.businessDocument', 'businessProfile.businessServices.service:id,service_name', 'businessProfile.bankDetail')->first();
         }else{
-            $user = User::where('id', $user->id)->first();
+            $user = User::where('id', $user->id)->with('addresses')->first();
         }
 
         return $this->success($user, 'User data fetched successfully', 200);
