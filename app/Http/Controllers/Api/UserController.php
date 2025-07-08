@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\BusinessBankDetails;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -20,23 +21,48 @@ class UserController extends Controller
      * @return \Illuminate\Http\JsonResponse  JSON response with success or error.
      */
 
+
     public function userData()
     {
         $user = User::where('id', auth()->user()->id)->first();
 
-         if (!$user) {
+        if (!$user) {
             return $this->error([], 'User not found', 404);
         }
 
-        if ($user->role == "business") {
+        if ($user->role === "business") {
             $user = User::where('id', $user->id)
-                ->with('businessProfile.onlineStore.storeImages', 'businessProfile.onlineStore.openingHours', 'businessProfile.onlineStore.storeAmenities.amenity', 'businessProfile.onlineStore.storeHighlights.highlight', 'businessProfile.onlineStore.storeValues.value', 'businessProfile.onlineStore.storeServices.catalogService', 'businessProfile.onlineStore.storeTeams.team', 'businessProfile.businessDocument', 'businessProfile.businessServices.service:id,service_name', 'businessProfile.bankDetail')->first();
-        }else{
-            $user = User::where('id', $user->id)->with('addresses')->first();
+                ->with([
+                    'businessProfile.onlineStore.storeImages',
+                    'businessProfile.onlineStore.openingHours',
+                    'businessProfile.onlineStore.storeAmenities.amenity',
+                    'businessProfile.onlineStore.storeHighlights.highlight',
+                    'businessProfile.onlineStore.storeValues.value',
+                    'businessProfile.onlineStore.storeServices.catalogService',
+                    'businessProfile.onlineStore.storeTeams.team',
+                    'businessProfile.businessDocument',
+                    'businessProfile.businessServices.service:id,service_name',
+                    'businessProfile.bankDetail'
+                ])->first();
+
+            if ($user->businessProfile === null) {
+                $user->setAttribute('flag', false);
+                $user->setAttribute('bank_connected', false);
+            } else {
+                $user->setAttribute('flag', true);
+                $hasBank = BusinessBankDetails::where('business_profile_id', $user->businessProfile->id)->exists();
+                $user->setAttribute('bank_connected', $hasBank);
+            }
+
+        } else {
+            $user = User::where('id', $user->id)
+                ->with('addresses')
+                ->first();
         }
 
         return $this->success($user, 'User data fetched successfully', 200);
     }
+
 
     /**
      * Update User Information
