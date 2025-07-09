@@ -21,10 +21,6 @@ class CatalogServiceController extends Controller
             ->where('business_profile_id', $businessProfileId)
             ->get();
 
-        if($services->isEmpty()){
-            return $this->error([],'Catalog Services not found',404);
-        }
-
         return $this->success($services, 'Catalog Services fetched successfully', 200);
     }
 
@@ -39,7 +35,7 @@ class CatalogServiceController extends Controller
             'description' => 'required|string',
             'duration' => 'required|string',
             'price_type' => 'required|string',
-            'price' => 'required|string',
+            'price' => 'required|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -56,10 +52,6 @@ class CatalogServiceController extends Controller
             'price_type',
             'price',
         ]));
-
-        if($service->isEmpty()){
-            return $this->error([],'Catalog Service failed to create',500);
-        }
 
         return $this->success($service, 'Catalog Service created successfully!', 201);
     }
@@ -81,7 +73,7 @@ class CatalogServiceController extends Controller
             'description' => 'sometimes|string',
             'duration' => 'sometimes|string',
             'price_type' => 'sometimes|string',
-            'price' => 'sometimes|string',
+            'price' => 'sometimes|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -156,10 +148,6 @@ class CatalogServiceController extends Controller
             ->orWhere('description', 'like', "%{$query}%")
             ->get();
 
-        if ($services->isEmpty()) {
-            return $this->error([], 'No catalog services found.', 404);
-        }
-
         return $this->success($services, 'Catalog services search result.', 200);
     }
 
@@ -177,10 +165,6 @@ class CatalogServiceController extends Controller
             ->when($catalog_service_category_Id, function ($query) use ($catalog_service_category_Id) {
                 $query->where('catalog_service_category_id', $catalog_service_category_Id);
             })->get();
-
-        if ($services->isEmpty()) {
-            return $this->error([], 'No catalog services found.', 404);
-        }
 
         return $this->success($services, 'Catalog services filtered successfully.',200);
     }

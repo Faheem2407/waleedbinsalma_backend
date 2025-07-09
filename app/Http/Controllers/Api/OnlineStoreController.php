@@ -54,7 +54,7 @@ class OnlineStoreController extends Controller
             'teams.*' => 'nullable|integer|exists:teams,id',
 
             'services' => 'required|array|min:1',
-            'services.*' => 'required|integer|exists:services,id',
+            'services.*' => 'required|integer|exists:catalog_services,id',
         ]);
 
         DB::beginTransaction();

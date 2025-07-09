@@ -116,7 +116,7 @@ class ProductController extends Controller
             'name' => 'sometimes|required|string',
             'barcode' => 'nullable|string',
             'measure' => 'sometimes|required|string',
-            'amount' => 'sometimes|required|numeric|min:0',
+            'amount' => 'sometimes|required|integer|min:0',
             'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'supply_price' => 'sometimes|required|numeric|min:0',
@@ -126,7 +126,7 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation Error', 422);
+            return $this->error($validator->errors(), $validator->errors()->first() , 422);
         }
 
         $data = $request->except('image_url');
