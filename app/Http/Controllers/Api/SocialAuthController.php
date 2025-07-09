@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
-use Exception;
+use App\Http\Controllers\Controller;
+use App\Models\BusinessBankDetails;
 use App\Models\User;
 use App\Traits\ApiResponse;
-use Illuminate\Support\Str;
+use Exception;
 use Illuminate\Http\Request;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class SocialAuthController extends Controller
 {
@@ -78,6 +79,23 @@ class SocialAuthController extends Controller
             ]);
         }
 
+        if ($user->role == 'business') {
+            if ($user->businessProfile == null) {
+                $user->setAttribute('flag', false);
+            } else {
+                $user->setAttribute('flag', true);
+                $bankDetailsExist = BusinessBankDetails::where('business_profile_id', $user->businessProfile->id)->exists();
+
+                if ($bankDetailsExist) {
+                    // Bank details exist
+                    $user->setAttribute('bank_connected', true);
+                } else {
+                    // Bank details do not exist
+                    $user->setAttribute('bank_connected', false);
+                }
+            }
+        }
+
         // Generate JWT token for the existing or newly created user
         $token = JWTAuth::fromUser($user);
 
@@ -90,6 +108,8 @@ class SocialAuthController extends Controller
             'provider' => $user->provider,
             'role'     => $user->role,
             'agree_to_terms' => $user->agree_to_terms,
+            'flag'     => $user->flag ?? false,
+            'bank_connected' => $user->bank_connected ?? false,
             'token'    => $token,
         ];
 
