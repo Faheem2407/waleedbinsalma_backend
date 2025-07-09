@@ -67,6 +67,7 @@ class SocialAuthController extends Controller
                 'avatar'         => $request->avatar, // Save avatar URL
                 'provider'       => $request->provider,
                 'password'       => bcrypt(Str::random(16)), // Generate a random password
+                'role'         => $request->role,
                 'agree_to_terms' => false,
             ]);
         } else {
@@ -81,12 +82,13 @@ class SocialAuthController extends Controller
         $token = JWTAuth::fromUser($user);
 
         // Prepare response data
-        $responseData = [
+        $responseData = [              
             'id'       => $user->id,
             'name'     => $user->first_name,
             'email'    => $user->email,
             'avatar'   => $user->avatar,
             'provider' => $user->provider,
+            'role'     => $user->role,
             'agree_to_terms' => $user->agree_to_terms,
             'token'    => $token,
         ];
