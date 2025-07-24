@@ -8,7 +8,7 @@
         <!--begin::Logo-->
         <a href="{{ route('admin.dashboard') }}">
             <img alt="Logo" src="{{ asset($systemSetting->logo ?? 'backend/media/logos/logo-default.svg') }}"
-                class="max-h-50px logo-default theme-light-show" />
+                class="max-h-50px logo-default theme-light-show" width="300px" height="300px" />
             {{-- <img alt="Logo" src="{{ asset($systemSetting->logo ?? 'backend/media/logos/logo-default.svg') }}"
                 class="max-h-50px logo-default theme-dark-show" /> --}}
             <img alt="Logo" src="{{ asset($systemSetting->logo ?? 'backend/media/logos/logo-default.svg') }}"
