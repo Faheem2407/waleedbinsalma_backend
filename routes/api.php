@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\SitesettingController;
 use App\Http\Controllers\Api\SocialLinkController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\Review\AppointmentReviewController;
+use App\Http\Controllers\Api\ComplainController;
 
 /*
 |--------------------------------------------------------------------------
@@ -104,4 +105,7 @@ Route::group(['middleware' => ['jwt.verify']], function () {
         Route::post('/submit', 'submitReview');
         Route::get('/all', 'storeReviews');
     });
+    
+
+    Route::post('/complain', [ComplainController::class, 'submit']);
 });
