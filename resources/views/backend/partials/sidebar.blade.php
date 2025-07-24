@@ -69,7 +69,15 @@
                         <span class="menu-title">FAQ</span>
                     </a>
                 </div> --}}
-
+                <div class="menu-item">
+                    <a class="menu-link {{ request()->routeIs('admin.complain.*') ? 'active' : '' }}"
+                        href="{{ route('admin.complain.index') }}">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size: 20px;"></i>
+                        </span>
+                        <span class="menu-title">Complains</span>
+                    </a>
+                </div>
                  <div class="menu-item">
                     <a class="menu-link {{ request()->routeIs('admin.service.*') ? 'active' : '' }}"
                         href="{{ route('admin.service.index') }}">

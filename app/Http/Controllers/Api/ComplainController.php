@@ -10,6 +10,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\ComplainSubmitted;
 
 class ComplainController extends Controller
 {
@@ -37,11 +38,8 @@ class ComplainController extends Controller
             ]);
 
             // Notify admin
-            $adminEmail = config('mail.admin_address', 'admin@example.com'); 
-            Mail::raw("New Complain from {$user->email}:\n\n{$request->message}", function ($message) use ($adminEmail) {
-                $message->to($adminEmail)
-                        ->subject('New Store Complaint Received');
-            });
+            $adminEmail = config('mail.admin_address', 'admin@example.com');
+            Mail::to($adminEmail)->send(new ComplainSubmitted($complain));
 
             return $this->success($complain, 'Complain submitted successfully.', 201);
 

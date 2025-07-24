@@ -11,6 +11,7 @@ use App\Http\Controllers\Web\Backend\BlogController;
 use App\Http\Controllers\Web\Backend\CMS\BlogController as CMSBlogController;
 use App\Http\Controllers\Web\Backend\BlogCategoryController;
 use App\Http\Controllers\Web\Backend\ClientReviewController;
+use App\Http\Controllers\Web\Backend\ComplainController;
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
@@ -208,3 +209,10 @@ Route::controller(ClientReviewController::class)->prefix('admin/')->name('client
     Route::get('client_review/status/{id}', 'status')->name('status');
     Route::delete('client_review/destroy/{id}', 'destroy')->name('destroy');
 });
+
+
+Route::prefix('admin')->name('admin.')->middleware(['web', 'auth'])->group(function () {
+    Route::get('complains', [ComplainController::class, 'index'])->name('complain.index');
+    Route::get('complains/{id}', [ComplainController::class, 'show'])->name('complain.show');
+});
+
