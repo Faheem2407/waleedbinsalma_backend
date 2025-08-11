@@ -331,7 +331,7 @@ class AppointmentCreateController extends Controller
     {
         $appointment = Appointment::with([
             'user',
-            'storeServices.catalogService.service'
+            'storeServices.catalogService'
         ])->findOrFail($appointmentId);
 
         $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
@@ -350,5 +350,6 @@ class AppointmentCreateController extends Controller
 
         return $pdf->download($invoiceNumber . '.pdf');
     }
+
 
 }
