@@ -93,7 +93,7 @@
                             </td>
                             <td>
                                 <strong>To:</strong><br>
-                                {{ $customer->name }}<br>
+                                {{ $customer->first_name.' '.$customer->last_name }}<br>
                                 {{ $customer->email }}<br>
                             </td>
                         </tr>
