@@ -304,21 +304,48 @@ class AppointmentCreateController extends Controller
         return redirect($cancel_redirect_url);
     }
 
+    // public function downloadInvoice($appointmentId)
+    // {
+    //     $appointment = Appointment::with(['user', 'storeServices.catalogService'])
+    //         ->findOrFail($appointmentId);
+
+    //     $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
+
+    //     $services = $appointment->storeServices->pluck('catalogService');
+
+    //     return $services;
+
+    //     $pdf = Pdf::loadView('invoices.appointment', [
+    //         'invoiceNumber' => $invoiceNumber,
+    //         'appointment'   => $appointment,
+    //         'user'          => $appointment->user,
+    //         'services'      => $services,
+    //         'totalAmount'   => $appointment->payment->amount ?? 0,
+    //     ]);
+
+    //     return $pdf->download($invoiceNumber . '.pdf');
+    // }
+
+
     public function downloadInvoice($appointmentId)
     {
-        $appointment = Appointment::with(['user', 'storeServices.catalogService'])
-            ->findOrFail($appointmentId);
+        $appointment = Appointment::with([
+            'user',
+            'storeServices.catalogService.service'
+        ])->findOrFail($appointmentId);
 
         $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
 
-        $services = $appointment->storeServices->pluck('catalogService');
+        $services = $appointment->storeServices->map(function ($storeService) {
+            return $storeService->catalogService;
+        });
 
         $pdf = Pdf::loadView('invoices.appointment', [
             'invoiceNumber' => $invoiceNumber,
             'appointment'   => $appointment,
             'user'          => $appointment->user,
             'services'      => $services,
-            'totalAmount'   => $appointment->payment->amount ?? 0,
+            'totalAmount'   => optional($appointment->payment)->amount ?? 0,
         ]);
 
         return $pdf->download($invoiceNumber . '.pdf');

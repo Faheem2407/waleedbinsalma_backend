@@ -26,7 +26,7 @@
         <thead>
             <tr>
                 <th>Service</th>
-                <th>Price (USD)</th>
+                <th>Price (SAR)</th>
             </tr>
         </thead>
         <tbody>
