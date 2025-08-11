@@ -316,41 +316,47 @@ class AppointmentCreateController extends Controller
 
 
 
-
-public function downloadInvoice()
+public function downloadInvoice($appointmentId)
 {
+    $appointment = Appointment::with([
+        'user',
+        'onlineStore',
+        'appointmentServices.storeService.catalogService',
+        'payments'
+    ])->findOrFail($appointmentId);
 
-    $invoiceNumber = 'INV-' . $this->id . '-' . now()->format('Ymd');
+
+    $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT) . '-' . now()->format('Ymd');
     
-    // Get all services with their details
-    $services = $this->appointmentServices()->with(['storeService.catalogService'])->get();
-    
-    // Calculate total amount
-    $totalAmount = $services->sum(function($appointmentService) {
-        return $appointmentService->storeService->catalogService->price;
+
+    $services = $appointment->appointmentServices->map(function ($appointmentService) {
+        $catalogService = $appointmentService->storeService->catalogService;
+        return [
+            'name' => $catalogService->name,
+            'description' => $catalogService->description,
+            'duration' => $catalogService->duration,
+            'price' => $catalogService->price,
+        ];
     });
-    
+
+    // Calculate total amount from services if payment record doesn't exist
+    $totalAmount = $appointment->payments->isNotEmpty() 
+        ? $appointment->payments->sum('amount')
+        : $services->sum('price');
+
     $data = [
         'invoice_number' => $invoiceNumber,
         'invoice_date' => now()->format('Y-m-d'),
-        'appointment' => $this,
-        'customer' => $this->user,
-        'services' => $services->map(function($appointmentService) {
-            $catalogService = $appointmentService->storeService->catalogService;
-            return [
-                'name' => $catalogService->name,
-                'description' => $catalogService->description,
-                'duration' => $catalogService->duration,
-                'price' => $catalogService->price,
-            ];
-        }),
+        'appointment' => $appointment,
+        'customer' => $appointment->user,
+        'services' => $services,
         'total_amount' => $totalAmount,
-        'store' => $this->onlineStore,
+        'store' => $appointment->onlineStore,
+        'payment' => $appointment->payments->first(),
     ];
-    
+
     $pdf = Pdf::loadView('invoices.appointment', $data);
     
     return $pdf->download("invoice-{$invoiceNumber}.pdf");
 }
-
 }
