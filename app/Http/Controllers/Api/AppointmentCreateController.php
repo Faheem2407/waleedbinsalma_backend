@@ -320,7 +320,7 @@ class AppointmentCreateController extends Controller
 public function downloadInvoice()
 {
 
-    $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
+    $invoiceNumber = 'INV-' . $this->id . '-' . now()->format('Ymd');
     
     // Get all services with their details
     $services = $this->appointmentServices()->with(['storeService.catalogService'])->get();
