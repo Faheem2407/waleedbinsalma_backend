@@ -290,26 +290,67 @@ class AppointmentCreateController extends Controller
         return redirect($cancel_redirect_url);
     }
 
-    public function downloadInvoice($appointmentId)
-    {
-        $appointment = Appointment::with(['user', 'storeServices.catalogService'])
-            ->findOrFail($appointmentId);
+    // public function downloadInvoice($appointmentId)
+    // {
+    //     $appointment = Appointment::with([
+    //         'user',
+    //         'storeServices.catalogService.service'
+    //     ])->findOrFail($appointmentId);
 
-        $services = $appointment->storeServices->map(fn($storeService) => $storeService->catalogService);
+    //     $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
 
-        $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
+    //     $services = $appointment->storeServices->map(function ($storeService) {
+    //         return $storeService->catalogService;
+    //     });
 
-        $totalAmount = optional($appointment->payment)->amount ?? $services->sum(fn($service) => $service->price);
+    //     $pdf = Pdf::loadView('invoices.appointment', [
+    //         'invoiceNumber' => $invoiceNumber,
+    //         'appointment'   => $appointment,
+    //         'user'          => $appointment->user,
+    //         'services'      => $services,
+    //         'totalAmount'   => optional($appointment->payment)->amount ?? 0,
+    //     ]);
 
-        $pdf = Pdf::loadView('invoices.appointment', [
-            'invoiceNumber' => $invoiceNumber,
-            'appointment' => $appointment,
-            'user' => $appointment->user,
-            'services' => $services,
-            'totalAmount' => $totalAmount,
-        ]);
+    //     return $pdf->download($invoiceNumber . '.pdf');
+    // }
 
-        return $pdf->download($invoiceNumber . '.pdf');
-    }
+
+
+
+public function downloadInvoice()
+{
+
+    $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
+    
+    // Get all services with their details
+    $services = $this->appointmentServices()->with(['storeService.catalogService'])->get();
+    
+    // Calculate total amount
+    $totalAmount = $services->sum(function($appointmentService) {
+        return $appointmentService->storeService->catalogService->price;
+    });
+    
+    $data = [
+        'invoice_number' => $invoiceNumber,
+        'invoice_date' => now()->format('Y-m-d'),
+        'appointment' => $this,
+        'customer' => $this->user,
+        'services' => $services->map(function($appointmentService) {
+            $catalogService = $appointmentService->storeService->catalogService;
+            return [
+                'name' => $catalogService->name,
+                'description' => $catalogService->description,
+                'duration' => $catalogService->duration,
+                'price' => $catalogService->price,
+            ];
+        }),
+        'total_amount' => $totalAmount,
+        'store' => $this->onlineStore,
+    ];
+    
+    $pdf = Pdf::loadView('invoices.appointment', $data);
+    
+    return $pdf->download("invoice-{$invoiceNumber}.pdf");
+}
 
 }
