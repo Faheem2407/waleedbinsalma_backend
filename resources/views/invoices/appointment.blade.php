@@ -16,10 +16,14 @@
     <p><strong>Invoice #:</strong> {{ $invoiceNumber }}</p>
     <p><strong>Date:</strong> {{ now()->format('Y-m-d H:i') }}</p>
 
-    <p><strong>Customer:</strong> {{ $user->first_name.' '.$user->last_name }}<br>
-       <strong>Email:</strong> {{ $user->email }}</p>
+    <p>
+        <strong>Customer:</strong> {{ $user->first_name ?? '' }} {{ $user->last_name ?? '' }}<br>
+        <strong>Email:</strong> {{ $user->email ?? '' }}
+    </p>
 
-    <p><strong>Appointment Date:</strong> {{ $appointment->date }} at {{ $appointment->time }}</p>
+    <p>
+        <strong>Appointment Date:</strong> {{ $appointment->date }} at {{ $appointment->time }}
+    </p>
 
     <h3>Services</h3>
     <table>
@@ -30,15 +34,15 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($services as $service)
+            @foreach ($services as $service)
                 <tr>
-                    <td>{{ $service->name }}</td>
-                    <td>${{ number_format($service->price, 2) }}</td>
+                    <td>{{ $service->name ?? 'N/A' }}</td>
+                    <td>{{ number_format($service->price ?? 0, 2) }}</td>
                 </tr>
             @endforeach
             <tr>
                 <th>Total</th>
-                <th>${{ number_format($totalAmount, 2) }}</th>
+                <th>{{ number_format($totalAmount, 2) }}</th>
             </tr>
         </tbody>
     </table>

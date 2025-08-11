@@ -351,31 +351,22 @@ class AppointmentCreateController extends Controller
     //     return $pdf->download($invoiceNumber . '.pdf');
     // }
 
-    public function downloadInvoice($appointmentId)
+public function downloadInvoice($appointmentId)
 {
-    // Load appointment and related user
-    $appointment = Appointment::with('user')->findOrFail($appointmentId);
+    // Load appointment with user and storeServices with catalogService eagerly
+    $appointment = Appointment::with([
+        'user',
+        'storeServices.catalogService'
+    ])->findOrFail($appointmentId);
 
-    // Retrieve the online_store_id for filtering StoreService
-    $onlineStoreId = $appointment->online_store_id;
-
-    // Get the StoreService IDs linked to this appointment
-    $storeServiceIdsMapped = $appointment->storeServices()->pluck('catalog_service_id')->toArray();
-
-    // Fetch the storeServices with their catalogServices to build services array
-    $storeServices = StoreService::with('catalogService')
-        ->whereIn('catalog_service_id', $storeServiceIdsMapped)
-        ->where('online_store_id', $onlineStoreId)
-        ->get();
-
-    // Prepare services array exactly like in booking method
-    $services = $storeServices->map(function ($storeService) {
-        return $storeService->catalogService;
-    });
+    // Prepare services collection from storeServices' catalogService relation
+    $services = $appointment->storeServices->map(fn($storeService) => $storeService->catalogService);
 
     $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
 
-    $totalAmount = optional($appointment->payment)->amount ?? 0;
+    // Use payment amount if available, else sum of catalogService prices
+    $totalAmount = optional($appointment->payment)->amount 
+        ?? $services->sum(fn($service) => $service->price);
 
     $pdf = Pdf::loadView('invoices.appointment', [
         'invoiceNumber' => $invoiceNumber,
@@ -387,5 +378,6 @@ class AppointmentCreateController extends Controller
 
     return $pdf->download($invoiceNumber . '.pdf');
 }
+
 
 }
