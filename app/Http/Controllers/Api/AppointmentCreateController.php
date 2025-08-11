@@ -292,7 +292,7 @@ class AppointmentCreateController extends Controller
 
     public function downloadInvoice($appointmentId)
     {
-        $appointment = Appointment::with(['user', 'storeServices.catalogService', 'payment'])
+        $appointment = Appointment::with(['user', 'storeServices.catalogService'])
             ->findOrFail($appointmentId);
 
         $services = $appointment->storeServices->map(fn($storeService) => $storeService->catalogService);
