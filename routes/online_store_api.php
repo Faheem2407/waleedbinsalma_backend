@@ -61,6 +61,9 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 Route::controller(AppointmentCreateController::class)->prefix('online-store')->group(function () {
     Route::get('/appointment/book/success', 'bookAppointmentSuccess')->name('appointment.book.success');
     Route::get('/appointment/book/cancel', 'bookAppointmentCancel')->name('appointment.book.cancel');
+
+    Route::get('/appointment/invoice/{appointment}', 'downloadInvoice')->name('appointment.download');
+
 });
 
 

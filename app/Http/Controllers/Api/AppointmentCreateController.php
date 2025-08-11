@@ -170,7 +170,7 @@ class AppointmentCreateController extends Controller
                 'mode' => 'payment',
                 'line_items' => [[
                     'price_data' => [
-                        'currency' => 'usd',
+                        'currency' => 'sar',
                         'unit_amount' => $amountInCents,
                         'product_data' => [
                             'name' => 'Appointment Booking at ' . $onlineStore->name,
@@ -303,4 +303,25 @@ class AppointmentCreateController extends Controller
 
         return redirect($cancel_redirect_url);
     }
+
+    public function downloadInvoice($appointmentId)
+    {
+        $appointment = Appointment::with(['user', 'storeServices.catalogService'])
+            ->findOrFail($appointmentId);
+
+        $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
+
+        $services = $appointment->storeServices->pluck('catalogService');
+
+        $pdf = Pdf::loadView('invoices.appointment', [
+            'invoiceNumber' => $invoiceNumber,
+            'appointment'   => $appointment,
+            'user'          => $appointment->user,
+            'services'      => $services,
+            'totalAmount'   => $appointment->payment->amount ?? 0,
+        ]);
+
+        return $pdf->download($invoiceNumber . '.pdf');
+    }
+
 }
