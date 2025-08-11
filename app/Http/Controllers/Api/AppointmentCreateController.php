@@ -327,29 +327,65 @@ class AppointmentCreateController extends Controller
     // }
 
 
+    // public function downloadInvoice($appointmentId)
+    // {
+    //     $appointment = Appointment::with([
+    //         'user',
+    //         'storeServices.catalogService'
+    //     ])->findOrFail($appointmentId);
+
+    //     $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
+
+    //     $services = $appointment->storeServices->map(function ($storeService) {
+    //         return $storeService->catalogService;
+    //     });
+
+    //     $pdf = Pdf::loadView('invoices.appointment', [
+    //         'invoiceNumber' => $invoiceNumber,
+    //         'appointment'   => $appointment,
+    //         'user'          => $appointment->user,
+    //         'services'      => $services,
+    //         'totalAmount'   => optional($appointment->payment)->amount ?? 0,
+    //     ]);
+
+    //     return $pdf->download($invoiceNumber . '.pdf');
+    // }
+
     public function downloadInvoice($appointmentId)
-    {
-        $appointment = Appointment::with([
-            'user',
-            'storeServices.catalogService'
-        ])->findOrFail($appointmentId);
+{
+    // Load appointment and related user
+    $appointment = Appointment::with('user')->findOrFail($appointmentId);
 
-        $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
+    // Retrieve the online_store_id for filtering StoreService
+    $onlineStoreId = $appointment->online_store_id;
 
-        $services = $appointment->storeServices->map(function ($storeService) {
-            return $storeService->catalogService;
-        });
+    // Get the StoreService IDs linked to this appointment
+    $storeServiceIdsMapped = $appointment->storeServices()->pluck('id')->toArray();
 
-        $pdf = Pdf::loadView('invoices.appointment', [
-            'invoiceNumber' => $invoiceNumber,
-            'appointment'   => $appointment,
-            'user'          => $appointment->user,
-            'services'      => $services,
-            'totalAmount'   => optional($appointment->payment)->amount ?? 0,
-        ]);
+    // Fetch the storeServices with their catalogServices to build services array
+    $storeServices = StoreService::with('catalogService')
+        ->whereIn('id', $storeServiceIdsMapped)
+        ->where('online_store_id', $onlineStoreId)
+        ->get();
 
-        return $pdf->download($invoiceNumber . '.pdf');
-    }
+    // Prepare services array exactly like in booking method
+    $services = $storeServices->map(function ($storeService) {
+        return $storeService->catalogService;
+    });
 
+    $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
+
+    $totalAmount = optional($appointment->payment)->amount ?? 0;
+
+    $pdf = Pdf::loadView('invoices.appointment', [
+        'invoiceNumber' => $invoiceNumber,
+        'appointment'   => $appointment,
+        'user'          => $appointment->user,
+        'services'      => $services,
+        'totalAmount'   => $totalAmount,
+    ]);
+
+    return $pdf->download($invoiceNumber . '.pdf');
+}
 
 }
