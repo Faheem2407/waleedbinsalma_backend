@@ -262,22 +262,8 @@ class AppointmentCreateController extends Controller
                 'payment_intent_id' => $session->payment_intent,
             ]);
 
-            // Generate Invoice PDF
-            $user = User::find($userId);
-            $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
-
-            $pdf = Pdf::loadView('invoices.appointment', [
-                'invoiceNumber' => $invoiceNumber,
-                'appointment' => $appointment,
-                'user' => $user,
-                'services' => $services,
-                'totalAmount' => $totalAmount,
-            ])->output();
-
-
 
             DB::commit();
-            // return $pdf->download($invoiceNumber . '.pdf');
 
             return redirect($success_redirect_url);
 
@@ -304,80 +290,26 @@ class AppointmentCreateController extends Controller
         return redirect($cancel_redirect_url);
     }
 
-    // public function downloadInvoice($appointmentId)
-    // {
-    //     $appointment = Appointment::with(['user', 'storeServices.catalogService'])
-    //         ->findOrFail($appointmentId);
+    public function downloadInvoice($appointmentId)
+    {
+        $appointment = Appointment::with(['user', 'storeServices.catalogService', 'payment'])
+            ->findOrFail($appointmentId);
 
-    //     $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
+        $services = $appointment->storeServices->map(fn($storeService) => $storeService->catalogService);
 
-    //     $services = $appointment->storeServices->pluck('catalogService');
+        $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
 
-    //     return $services;
+        $totalAmount = optional($appointment->payment)->amount ?? $services->sum(fn($service) => $service->price);
 
-    //     $pdf = Pdf::loadView('invoices.appointment', [
-    //         'invoiceNumber' => $invoiceNumber,
-    //         'appointment'   => $appointment,
-    //         'user'          => $appointment->user,
-    //         'services'      => $services,
-    //         'totalAmount'   => $appointment->payment->amount ?? 0,
-    //     ]);
+        $pdf = Pdf::loadView('invoices.appointment', [
+            'invoiceNumber' => $invoiceNumber,
+            'appointment' => $appointment,
+            'user' => $appointment->user,
+            'services' => $services,
+            'totalAmount' => $totalAmount,
+        ]);
 
-    //     return $pdf->download($invoiceNumber . '.pdf');
-    // }
-
-
-    // public function downloadInvoice($appointmentId)
-    // {
-    //     $appointment = Appointment::with([
-    //         'user',
-    //         'storeServices.catalogService'
-    //     ])->findOrFail($appointmentId);
-
-    //     $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
-
-    //     $services = $appointment->storeServices->map(function ($storeService) {
-    //         return $storeService->catalogService;
-    //     });
-
-    //     $pdf = Pdf::loadView('invoices.appointment', [
-    //         'invoiceNumber' => $invoiceNumber,
-    //         'appointment'   => $appointment,
-    //         'user'          => $appointment->user,
-    //         'services'      => $services,
-    //         'totalAmount'   => optional($appointment->payment)->amount ?? 0,
-    //     ]);
-
-    //     return $pdf->download($invoiceNumber . '.pdf');
-    // }
-
-public function downloadInvoice($appointmentId)
-{
-    // Load appointment with user and storeServices with catalogService eagerly
-    $appointment = Appointment::with([
-        'user',
-        'storeServices.catalogService'
-    ])->findOrFail($appointmentId);
-
-    // Prepare services collection from storeServices' catalogService relation
-    $services = $appointment->storeServices->map(fn($storeService) => $storeService->catalogService);
-
-    $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT);
-
-    // Use payment amount if available, else sum of catalogService prices
-    $totalAmount = optional($appointment->payment)->amount 
-        ?? $services->sum(fn($service) => $service->price);
-
-    $pdf = Pdf::loadView('invoices.appointment', [
-        'invoiceNumber' => $invoiceNumber,
-        'appointment'   => $appointment,
-        'user'          => $appointment->user,
-        'services'      => $services,
-        'totalAmount'   => $totalAmount,
-    ]);
-
-    return $pdf->download($invoiceNumber . '.pdf');
-}
-
+        return $pdf->download($invoiceNumber . '.pdf');
+    }
 
 }

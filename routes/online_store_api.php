@@ -62,8 +62,7 @@ Route::controller(AppointmentCreateController::class)->prefix('online-store')->g
     Route::get('/appointment/book/success', 'bookAppointmentSuccess')->name('appointment.book.success');
     Route::get('/appointment/book/cancel', 'bookAppointmentCancel')->name('appointment.book.cancel');
 
-    Route::get('/appointment/invoice/{appointment}', 'downloadInvoice')->name('appointment.download');
-
+    Route::get('/appointments/{appointment}/invoice', 'downloadInvoice')->name('appointments.invoice.download');
 });
 
 
