@@ -17,6 +17,7 @@ Route::controller(OnlineStoreController::class)->prefix('online-store')->group(f
     Route::get('/show-all', 'showAllOnlineStores');
     Route::get('/product/{id}', 'viewProduct');
     Route::get('/trending',  'showTrendingStores');
+    Route::get('/subcribed', 'showSubscribedStores');
     Route::group(['middleware' => ['guest']], function () {
         Route::get('/recently-viewed', 'recentlyViewedStores');
         Route::get('/show-details/{id}', 'showOnlineStoreDetails');

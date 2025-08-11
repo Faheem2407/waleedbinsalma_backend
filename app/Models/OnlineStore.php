@@ -61,4 +61,9 @@ class OnlineStore extends Model
         return $this->hasMany(Review::class, 'online_store_id');
     }
 
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class, 'online_store_id');
+    }
+
 }

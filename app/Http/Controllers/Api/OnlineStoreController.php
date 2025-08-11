@@ -428,4 +428,43 @@ class OnlineStoreController extends Controller
         return $this->success($stores, 'Recently viewed stores fetched successfully.', 200);
     }
 
+
+    public function showSubscribedStores(Request $request)
+    {
+        try {
+            $query = OnlineStore::with([
+                    'storeImages:id,online_store_id,images',
+                    'storeServices.catalogService',
+                    'subscriptions' => function ($q) {
+                        $q->where('end_date', '>=', now());
+                    }
+                ])
+                ->whereHas('subscriptions', function ($q) {
+                    $q->where('end_date', '>=', now());
+                });
+
+            if ($request->filled('service_id')) {
+                $query->whereHas('storeServices', function ($q) use ($request) {
+                    $q->where('catalog_service_id', $request->service_id);
+                });
+            }
+
+            if ($request->filled(['latitude', 'longitude'])) {
+                $latitude = $request->latitude;
+                $longitude = $request->longitude;
+                $radius = $request->radius ?? 1000;
+
+                $haversine = "(6371 * acos(cos(radians($latitude)) * cos(radians(latitude)) * cos(radians(longitude) - radians($longitude)) + sin(radians($latitude)) * sin(radians(latitude))))";
+                $query->whereRaw("$haversine <= ?", [$radius]);
+            }
+
+            $stores = $query->paginate(4);
+
+            return $this->success($stores, 'Subscribed stores fetched successfully.', 200);
+
+        } catch (\Exception $e) {
+            return $this->error([], $e->getMessage(), 500);
+        }
+    }
+
 }

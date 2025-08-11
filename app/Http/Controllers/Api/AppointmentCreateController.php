@@ -74,7 +74,7 @@ class AppointmentCreateController extends Controller
                 'mode' => 'payment',
                 'line_items' => [[
                     'price_data' => [
-                        'currency' => 'usd',
+                        'currency' => 'sar',
                         'unit_amount' => $amountInCents,
                         'product_data' => [
                             'name' => 'Appointment Booking at ' . $onlineStore->name,
@@ -256,7 +256,7 @@ class AppointmentCreateController extends Controller
                 'user_id' => $userId,
                 'appointment_id' => $appointment->id,
                 'amount' => $totalAmount,
-                'currency' => 'usd',
+                'currency' => 'sar',
                 'status' => 'succeeded',
                 'payment_method' => 'stripe',
                 'payment_intent_id' => $session->payment_intent,
@@ -272,14 +272,15 @@ class AppointmentCreateController extends Controller
                 'user' => $user,
                 'services' => $services,
                 'totalAmount' => $totalAmount,
-            ]);
+            ])->output();
+
+
 
             DB::commit();
+            // return $pdf->download($invoiceNumber . '.pdf');
 
-            // Return the PDF download instead of redirecting
-            return $pdf->download($invoiceNumber . '.pdf');
+            return redirect($success_redirect_url);
 
-            // return redirect($success_redirect_url);
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 'Failed to complete appointment.', 500);
