@@ -360,11 +360,11 @@ class AppointmentCreateController extends Controller
     $onlineStoreId = $appointment->online_store_id;
 
     // Get the StoreService IDs linked to this appointment
-    $storeServiceIdsMapped = $appointment->storeServices()->pluck('id')->toArray();
+    $storeServiceIdsMapped = $appointment->storeServices()->pluck('catalog_service_id')->toArray();
 
     // Fetch the storeServices with their catalogServices to build services array
     $storeServices = StoreService::with('catalogService')
-        ->whereIn('id', $storeServiceIdsMapped)
+        ->whereIn('catalog_service_id', $storeServiceIdsMapped)
         ->where('online_store_id', $onlineStoreId)
         ->get();
 
