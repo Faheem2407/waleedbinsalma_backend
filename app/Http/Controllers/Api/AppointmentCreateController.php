@@ -215,7 +215,7 @@ class AppointmentCreateController extends Controller
             'onlineStore',
             'appointmentServices.storeService.catalogService',
             'payments'
-        ])->findOrFail($appointmentId);
+        ])->find($appointmentId);
 
 
         $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT) . '-' . now()->format('Ymd');
