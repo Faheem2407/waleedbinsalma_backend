@@ -217,6 +217,10 @@ class AppointmentCreateController extends Controller
             'payments'
         ])->find($appointmentId);
 
+        if(!$appointment){
+            return $this->error([],'No appointment found',404);
+        }
+
 
         $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT) . '-' . now()->format('Ymd');
         
