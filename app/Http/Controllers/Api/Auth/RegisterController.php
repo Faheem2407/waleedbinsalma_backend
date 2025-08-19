@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\RegistationOtp;
+use App\Mail\WelcomeEmail;
 use App\Models\EmailOtp;
 use App\Models\User;
 use App\Traits\ApiResponse;
@@ -16,15 +17,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class RegisterController extends Controller
 {
-
     use ApiResponse;
 
-    /**
-     * Send a Register (OTP) to the user via email.
-     *
-     * @param  \App\Models\User  $user
-     * @return void
-     */
 
     private function sendOtp($user)
     {
@@ -42,16 +36,9 @@ class RegisterController extends Controller
         Mail::to($user->email)->send(new RegistationOtp($user, $code));
     }
 
-    /**
-     * Register User
-     *
-     * @param  \Illuminate\Http\Request  $request  The HTTP request with the register query.
-     * @return \Illuminate\Http\JsonResponse  JSON response with success or error.
-     */
 
     public function userRegister(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'first_name'           => 'required|string|max:255',
             'role'                 => 'required',
@@ -90,17 +77,15 @@ class RegisterController extends Controller
                 $imageName = uploadImage($image, 'User/Avatar');
             }
 
-            // dd($imageName);
-
             $user->avatar            = $imageName;
 
             $user->save();
             $token = JWTAuth::fromUser($user);
             $user->setAttribute('token', $token);
             $user->setAttribute('flag', false);
-            // if($request->role == 'business'){
-            //     if($user->)
-            // }
+
+            // Send welcome email
+            Mail::to($user->email)->send(new WelcomeEmail($user));
 
             return $this->success($user, 'Registered Successfully.', 201);
         } catch (\Exception $e) {
@@ -108,15 +93,9 @@ class RegisterController extends Controller
         }
     }
 
-    /**
-     * Verify the OTP sent to the user.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
+
     public function otpVerify(Request $request)
     {
-
         // Validate the request
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
@@ -136,9 +115,7 @@ class RegisterController extends Controller
                 ->where('expires_at', '>', Carbon::now())
                 ->first();
 
-
             if ($verification) {
-
                 $user->email_verified_at = Carbon::now();
                 $user->save();
 
@@ -150,7 +127,6 @@ class RegisterController extends Controller
 
                 return $this->success($user, 'OTP verified successfully', 200);
             } else {
-
                 return $this->error([], 'Invalid or expired OTP', 400);
             }
         } catch (\Exception $e) {
@@ -158,16 +134,9 @@ class RegisterController extends Controller
         }
     }
 
-    /**
-     * Resend an OTP to the user.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
 
     public function otpResend(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
         ]);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\OnlineStore;
 use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,8 @@ use Carbon\Carbon;
 use Stripe\Stripe;
 use App\Traits\ApiResponse;
 use App\Models\SubscriptionPrice;
+use App\Mail\SubscriptionConfirmation;
+use Illuminate\Support\Facades\Mail;
 
 class SubscriptionController extends Controller
 {
@@ -100,7 +103,14 @@ class SubscriptionController extends Controller
             $session = Session::retrieve($sessionId);
             $meta = $session->metadata;
             $storeId = $meta['online_store_id'];
+            $userId = $meta['user_id'];
             $redirectUrl = $meta['success_redirect_url'] ?? '/';
+
+            // Fetch user from database using user_id from metadata
+            $user = User::findOrFail($userId);
+            if (!$user) {
+                return $this->error([], 'User not found.', 404);
+            }
 
             $now = now();
             $end = $now->copy()->addDays(30);
@@ -123,6 +133,10 @@ class SubscriptionController extends Controller
                 'payment_method' => $session->payment_method_types[0] ?? null,
             ]);
 
+            // Send subscription confirmation email
+            $store = OnlineStore::findOrFail($storeId);
+            Mail::to($user->email)->send(new SubscriptionConfirmation($user, $store, $subscription, $session->amount_total / 100));
+
             DB::commit();
 
             return redirect($redirectUrl);
@@ -137,8 +151,6 @@ class SubscriptionController extends Controller
         $redirectUrl = $request->query('redirect_url') ?? '/';
         return redirect($redirectUrl);
     }
-
-
 
     public function renew(Request $request)
     {
@@ -190,6 +202,7 @@ class SubscriptionController extends Controller
                     'renew_subscription_id' => $latestSubscription->id,
                     'success_redirect_url' => $request->success_redirect_url,
                     'cancel_redirect_url' => $request->cancel_redirect_url,
+                    'user_id' => $user->id, // Add user_id to metadata for renew
                 ],
                 'success_url' => route('subscription.renew.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('subscription.cancel') . '?redirect_url=' . $request->cancel_redirect_url,
@@ -202,10 +215,6 @@ class SubscriptionController extends Controller
             return $this->error([], 'Stripe error: ' . $e->getMessage(), 500);
         }
     }
-
-
-
-
 
     public function handleRenewSuccess(Request $request)
     {
@@ -220,10 +229,17 @@ class SubscriptionController extends Controller
             $meta = $session->metadata;
 
             $subscriptionId = $meta['renew_subscription_id'] ?? null;
+            $userId = $meta['user_id'];
             $redirectUrl = $meta['success_redirect_url'] ?? '/';
 
             if (!$subscriptionId) {
                 return $this->error([], 'Subscription ID missing in metadata.', 400);
+            }
+
+            // Fetch user from database using user_id from metadata
+            $user = User::findOrFail($userId);
+            if (!$user) {
+                return $this->error([], 'User not found.', 404);
             }
 
             $subscription = Subscription::findOrFail($subscriptionId);
@@ -248,6 +264,10 @@ class SubscriptionController extends Controller
                 'payment_method' => $session->payment_method_types[0] ?? null,
             ]);
 
+            // Send subscription renewal confirmation email
+            $store = OnlineStore::findOrFail($subscription->online_store_id);
+            Mail::to($user->email)->send(new SubscriptionConfirmation($user, $store, $subscription, $session->amount_total / 100));
+
             DB::commit();
 
             return redirect($redirectUrl);
@@ -256,6 +276,4 @@ class SubscriptionController extends Controller
             return $this->error([], 'Failed to complete renewal: ' . $e->getMessage(), 500);
         }
     }
-
-
 }

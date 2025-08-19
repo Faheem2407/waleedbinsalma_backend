@@ -18,6 +18,8 @@ use Stripe\PaymentIntent;
 use Stripe\Stripe;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\User;
+use App\Mail\AppointmentConfirmation;
+use Illuminate\Support\Facades\Mail;
 
 class AppointmentCreateController extends Controller
 {
@@ -124,7 +126,6 @@ class AppointmentCreateController extends Controller
         }
     }
 
-
     public function bookAppointmentSuccess(Request $request)
     {
         $sessionId = $request->query('session_id');
@@ -155,7 +156,7 @@ class AppointmentCreateController extends Controller
             ]);
 
             $storeServiceIdsMapped = [];
-            $services = []; // store service list for invoice
+            $services = []; // Store service list for email and invoice
             foreach ($storeServiceIds as $catalogId) {
                 $storeService = StoreService::where('catalog_service_id', $catalogId)
                     ->where('online_store_id', $metadata['online_store_id'])
@@ -163,7 +164,10 @@ class AppointmentCreateController extends Controller
 
                 if ($storeService) {
                     $storeServiceIdsMapped[] = $storeService->id;
-                    $services[] = $storeService->catalogService; // add for invoice view
+                    $services[] = [
+                        'name' => $storeService->catalogService->name,
+                        'price' => $storeService->catalogService->price,
+                    ];
                 }
             }
 
@@ -179,6 +183,18 @@ class AppointmentCreateController extends Controller
                 'payment_intent_id' => $session->payment_intent,
             ]);
 
+            // Send appointment confirmation email
+            $user = User::findOrFail($userId);
+            $store = OnlineStore::findOrFail($metadata['online_store_id']);
+            try {
+                Mail::to($user->email)->send(new AppointmentConfirmation($user, $store, $appointment, $services, $totalAmount, false));
+            } catch (\Exception $e) {
+                Log::error('Failed to send appointment confirmation email: ', [
+                    'error' => $e->getMessage(),
+                    'user_id' => $userId,
+                    'appointment_id' => $appointment->id,
+                ]);
+            }
 
             DB::commit();
 
@@ -189,7 +205,6 @@ class AppointmentCreateController extends Controller
             return $this->error($e->getMessage(), 'Failed to complete appointment.', 500);
         }
     }
-
 
     public function bookAppointmentCancel(Request $request)
     {
@@ -207,36 +222,32 @@ class AppointmentCreateController extends Controller
         return redirect($cancel_redirect_url);
     }
 
-
     public function downloadInvoice($appointmentId)
     {
         $appointment = Appointment::with([
             'user',
             'onlineStore',
-            'appointmentServices.storeService.catalogService',
+            'storeServices.catalogService', 
             'payments'
         ])->find($appointmentId);
 
-        if(!$appointment){
-            return $this->error([],'No appointment found',404);
+        if (!$appointment) {
+            return $this->error([], 'No appointment found', 404);
         }
 
-
         $invoiceNumber = 'INV-' . str_pad($appointment->id, 6, '0', STR_PAD_LEFT) . '-' . now()->format('Ymd');
-        
 
-        $services = $appointment->appointmentServices->map(function ($appointmentService) {
-            $catalogService = $appointmentService->storeService->catalogService;
+        $services = $appointment->storeServices->map(function ($storeService) {
+            $catalogService = $storeService->catalogService;
             return [
                 'name' => $catalogService->name,
-                'description' => $catalogService->description,
-                'duration' => $catalogService->duration,
-                'price' => $catalogService->price,
+                'description' => $catalogService->description ?? 'N/A', 
+                'duration' => $catalogService->duration ?? 'N/A', 
+                'price' => $cardService->price,
             ];
         });
 
-        // Calculate total amount from services if payment record doesn't exist
-        $totalAmount = $appointment->payments->isNotEmpty() 
+        $totalAmount = $appointment->payments->isNotEmpty()
             ? $appointment->payments->sum('amount')
             : $services->sum('price');
 
@@ -251,8 +262,12 @@ class AppointmentCreateController extends Controller
             'payment' => $appointment->payments->first(),
         ];
 
-        $pdf = Pdf::loadView('invoices.appointment', $data);
-        
-        return $pdf->download("invoice-{$invoiceNumber}.pdf");
+        try {
+            $pdf = Pdf::loadView('invoices.appointment', $data);
+            return $pdf->download("invoice-{$invoiceNumber}.pdf");
+        } catch (\Exception $e) {
+            Log::error('PDF generation failed: ' . $e->getMessage());
+            return $this->error([], 'Failed to generate invoice.', 500);
+        }
     }
 }
