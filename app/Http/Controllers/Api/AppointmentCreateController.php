@@ -8,6 +8,7 @@ use App\Models\CatalogService;
 use App\Models\OnlineStore;
 use App\Models\Payment;
 use App\Models\StoreService;
+use App\Models\DiscountCode;
 use Illuminate\Http\Request;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +43,7 @@ class AppointmentCreateController extends Controller
             'store_service_ids.*' => 'exists:catalog_services,id',
             'success_redirect_url' => 'nullable|url',
             'cancel_redirect_url' => 'nullable|url',
+            'discount_code' => 'nullable|string',
         ]);
 
         try {
@@ -56,7 +58,7 @@ class AppointmentCreateController extends Controller
             $existingAppointment = Appointment::where('online_store_id', $request->online_store_id)
                 ->where('date', $request->date)
                 ->where('time', $request->time)
-                ->where('status', 'confirmed') // only block confirmed ones
+                ->where('status', 'confirmed')
                 ->first();
 
             if ($existingAppointment) {
@@ -69,6 +71,27 @@ class AppointmentCreateController extends Controller
             }
 
             $totalAmount = $services->sum('price');
+            $discountAmount = 0;
+            $discountCode = null;
+
+            // Validate and apply discount code if provided
+            if ($request->discount_code) {
+                $discountCode = DiscountCode::where('online_store_id', $request->online_store_id)
+                    ->where('code', $request->discount_code)
+                    ->first();
+
+                if (!$discountCode) {
+                    return $this->error([], 'Invalid discount code.', 400);
+                }
+
+                if (!$discountCode->isValid($totalAmount)) {
+                    return $this->error([], 'Discount code is not valid or has expired.', 400);
+                }
+
+                $discountAmount = $discountCode->calculateDiscount($totalAmount);
+                $totalAmount -= $discountAmount;
+            }
+
             if ($totalAmount <= 0) {
                 return $this->error([], 'Invalid amount for payment.', 400);
             }
@@ -113,6 +136,8 @@ class AppointmentCreateController extends Controller
                     'store_service_ids' => implode(',', $request->store_service_ids),
                     'success_redirect_url' => $request->get('success_redirect_url'),
                     'cancel_redirect_url' => $request->get('cancel_redirect_url'),
+                    'discount_code_id' => $discountCode ? $discountCode->id : null,
+                    'discount_amount_applied' => $discountAmount,
                 ],
                 'success_url' => route('appointment.book.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('appointment.book.cancel') . '?redirect_url=' . $request->get('cancel_redirect_url'),
@@ -142,6 +167,8 @@ class AppointmentCreateController extends Controller
             $userId = $metadata['user_id'];
             $storeServiceIds = explode(',', $metadata['store_service_ids']);
             $totalAmount = (int) ($session->amount_total / 100);
+            $discountCodeId = $metadata->discount_code_id ?? null;
+            $discountAmount = $metadata->discount_amount_applied ?? 0;
 
             DB::beginTransaction();
 
@@ -153,10 +180,23 @@ class AppointmentCreateController extends Controller
                 'time' => $metadata['time'],
                 'booking_notes' => $metadata['booking_notes'],
                 'status' => 'confirmed',
+                'discount_code_id' => $discountCodeId,
+                'discount_amount_applied' => $discountAmount,
             ]);
 
+            // Increment discount code usage if applied
+            if ($discountCodeId) {
+                $discountCode = DiscountCode::find($discountCodeId);
+                if ($discountCode) {
+                    $discountCode->increment('used_count');
+                    if ($discountCode->usage_limit && $discountCode->used_count >= $discountCode->usage_limit) {
+                        $discountCode->update(['is_active' => false]);
+                    }
+                }
+            }
+
             $storeServiceIdsMapped = [];
-            $services = []; // Store service list for email and invoice
+            $services = [];
             foreach ($storeServiceIds as $catalogId) {
                 $storeService = StoreService::where('catalog_service_id', $catalogId)
                     ->where('online_store_id', $metadata['online_store_id'])
@@ -187,7 +227,18 @@ class AppointmentCreateController extends Controller
             $user = User::findOrFail($userId);
             $store = OnlineStore::findOrFail($metadata['online_store_id']);
             try {
-                Mail::to($user->email)->send(new AppointmentConfirmation($user, $store, $appointment, $services, $totalAmount, false));
+                Mail::to($user->email)->send(new AppointmentConfirmation(
+                    $user,
+                    $store,
+                    $appointment,
+                    $services,
+                    $totalAmount,
+                    false,
+                    $discountCode ? [
+                        'code' => $discountCode->code,
+                        'amount' => $discountAmount,
+                    ] : null
+                ));
             } catch (\Exception $e) {
                 Log::error('Failed to send appointment confirmation email: ', [
                     'error' => $e->getMessage(),
@@ -227,8 +278,9 @@ class AppointmentCreateController extends Controller
         $appointment = Appointment::with([
             'user',
             'onlineStore',
-            'storeServices.catalogService', 
-            'payments'
+            'storeServices.catalogService',
+            'payments',
+            'discountCode',
         ])->find($appointmentId);
 
         if (!$appointment) {
@@ -241,15 +293,17 @@ class AppointmentCreateController extends Controller
             $catalogService = $storeService->catalogService;
             return [
                 'name' => $catalogService->name,
-                'description' => $catalogService->description ?? 'N/A', 
-                'duration' => $catalogService->duration ?? 'N/A', 
-                'price' => $cardService->price,
+                'description' => $catalogService->description ?? 'N/A',
+                'duration' => $catalogService->duration ?? 'N/A',
+                'price' => $catalogService->price,
             ];
         });
 
+        $subtotal = $services->sum('price');
+        $discountAmount = $appointment->discount_amount_applied ?? 0;
         $totalAmount = $appointment->payments->isNotEmpty()
             ? $appointment->payments->sum('amount')
-            : $services->sum('price');
+            : ($subtotal - $discountAmount);
 
         $data = [
             'invoice_number' => $invoiceNumber,
@@ -257,6 +311,9 @@ class AppointmentCreateController extends Controller
             'appointment' => $appointment,
             'customer' => $appointment->user,
             'services' => $services,
+            'subtotal' => $subtotal,
+            'discount_amount' => $discountAmount,
+            'discount_code' => $appointment->discountCode ? $appointment->discountCode->code : null,
             'total_amount' => $totalAmount,
             'store' => $appointment->onlineStore,
             'payment' => $appointment->payments->first(),

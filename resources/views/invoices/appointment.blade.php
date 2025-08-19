@@ -71,7 +71,7 @@
     <div class="invoice-box">
         <div class="header">
             <div>
-                <h1>INVOICE</h1>
+                <h1>APPOINTMENT INVOICE</h1>
                 <p>Invoice #: {{ $invoice_number }}</p>
                 <p>Date: {{ $invoice_date }}</p>
             </div>
@@ -136,6 +136,18 @@
                 <td>{{ number_format($service['price'], 2) }} SAR</td>
             </tr>
             @endforeach
+            
+            <tr class="total">
+                <td>Subtotal</td>
+                <td>{{ number_format($subtotal, 2) }} SAR</td>
+            </tr>
+            
+            @if($discount_amount > 0)
+            <tr class="total">
+                <td>Discount ({{ $discount_code }})</td>
+                <td>-{{ number_format($discount_amount, 2) }} SAR</td>
+            </tr>
+            @endif
             
             <tr class="total">
                 <td></td>

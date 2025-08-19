@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\BusinessOwnerDashboardController;
 use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\DiscountCodeController;
 
 Route::controller(BusinessOwnerDashboardController::class)->prefix('/business-owner')->group(function () {
     Route::get('/appointments/analytics', 'appointmentAnalytics');
@@ -18,4 +19,5 @@ Route::controller(AppointmentController::class)->prefix('appointments')->group(f
     Route::get('/this-week-total','totalAppointmentsThisWeek');
 });
 
+Route::post('/stores/{online_store_id}/discount-codes', [DiscountCodeController::class, 'createDiscountCode'])->middleware('jwt.verify');
 

@@ -16,26 +16,37 @@
                                 {{ $isReschedule ? 'Appointment Rescheduling Confirmation' : 'Appointment Confirmation' }}
                             </h1>
                             <p style="font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
-                                Dear {{ $userName }},
+                                Dear {{ $user->name }},
                             </p>
                             <p style="font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
-                                Thank you for {{ $isReschedule ? 'rescheduling' : 'booking' }} your appointment with {{ $storeName }}!
+                                Thank you for {{ $isReschedule ? 'rescheduling' : 'booking' }} your appointment with {{ $store->name }}!
                             </p>
                             <h2 style="font-size: 18px; color: #333; margin: 20px 0 10px;">Appointment Details:</h2>
                             <ul style="font-size: 16px; line-height: 1.5; margin: 0 0 20px; padding-left: 20px;">
-                                <li><strong>Date:</strong> {{ $appointmentDate }}</li>
-                                <li><strong>Time:</strong> {{ $appointmentTime }}</li>
-                                <li><strong>Type:</strong> {{ $appointmentType }}</li>
-                                <li><strong>Notes:</strong> {{ $bookingNotes }}</li>
+                                <li><strong>Date:</strong> {{ $appointment->date }}</li>
+                                <li><strong>Time:</strong> {{ $appointment->time }}</li>
+                                <li><strong>Type:</strong> {{ ucfirst($appointment->appointment_type) }}</li>
+                                <li><strong>Notes:</strong> {{ $appointment->booking_notes }}</li>
                             </ul>
                             <h2 style="font-size: 18px; color: #333; margin: 20px 0 10px;">Services Booked:</h2>
                             <ul style="font-size: 16px; line-height: 1.5; margin: 0 0 20px; padding-left: 20px;">
                                 @foreach ($services as $service)
-                                    <li>{{ $service['name'] }} - ${{ number_format($service['price'], 2) }}</li>
+                                    <li>{{ $service['name'] }} - {{ number_format($service['price'], 2) }} SAR</li>
                                 @endforeach
                             </ul>
+                            @php
+                                $subtotal = array_sum(array_column($services, 'price'));
+                            @endphp
+                            @if ($discount)
+                                <p style="font-size: 16px; line-height: 1.5; margin: 0 0 10px;">
+                                    <strong>Subtotal:</strong> {{ number_format($subtotal, 2) }} SAR
+                                </p>
+                                <p style="font-size: 16px; line-height: 1.5; margin: 0 0 10px;">
+                                    <strong>Discount ({{ $discount['code'] }}):</strong> -{{ number_format($discount['amount'], 2) }} SAR
+                                </p>
+                            @endif
                             <p style="font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
-                                <strong>Total Amount Paid:</strong> ${{ $totalAmount }}
+                                <strong>Total Amount Paid:</strong> {{ number_format($totalAmount, 2) }} SAR
                             </p>
                             <p style="font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
                                 Your appointment is {{ $isReschedule ? 'rescheduled and confirmed' : 'confirmed' }}. We look forward to seeing you!

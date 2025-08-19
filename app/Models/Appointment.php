@@ -16,7 +16,9 @@ class Appointment extends Model
         'date',
         'time',
         'booking_notes',
-        'status'
+        'status',
+        'discount_code_id',
+        'discount_amount_applied',
     ];
 
     public function user()
@@ -52,5 +54,10 @@ class Appointment extends Model
     public function appointmentServices()
     {
         return $this->belongsToMany(StoreService::class, 'appointment_services', 'appointment_id', 'store_service_id');
+    }
+
+    public function discountCode()
+    {
+        return $this->belongsTo(DiscountCode::class);
     }
 }

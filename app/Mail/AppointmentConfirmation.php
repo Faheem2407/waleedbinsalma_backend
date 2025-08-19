@@ -19,8 +19,9 @@ class AppointmentConfirmation extends Mailable
     public $services;
     public $totalAmount;
     public $isReschedule;
+    public $discount;
 
-    public function __construct(User $user, OnlineStore $store, Appointment $appointment, array $services, $totalAmount, $isReschedule = false)
+    public function __construct(User $user, OnlineStore $store, Appointment $appointment, array $services, $totalAmount, $isReschedule = false, $discount = null)
     {
         $this->user = $user;
         $this->store = $store;
@@ -28,6 +29,7 @@ class AppointmentConfirmation extends Mailable
         $this->services = $services;
         $this->totalAmount = $totalAmount;
         $this->isReschedule = $isReschedule;
+        $this->discount = $discount;
     }
 
     public function build()
@@ -36,15 +38,13 @@ class AppointmentConfirmation extends Mailable
         return $this->subject($subject)
                     ->view('emails.appointment_confirmation')
                     ->with([
-                        'userName' => $this->user->name,
-                        'storeName' => $this->store->name ?? 'Online Store',
-                        'appointmentDate' => $this->appointment->date,
-                        'appointmentTime' => $this->appointment->time,
-                        'appointmentType' => ucfirst($this->appointment->appointment_type),
-                        'bookingNotes' => $this->appointment->booking_notes,
+                        'user' => $this->user,
+                        'store' => $this->store,
+                        'appointment' => $this->appointment,
                         'services' => $this->services,
-                        'totalAmount' => number_format($this->totalAmount, 2),
+                        'totalAmount' => $this->totalAmount,
                         'isReschedule' => $this->isReschedule,
+                        'discount' => $this->discount,
                     ]);
     }
 }
