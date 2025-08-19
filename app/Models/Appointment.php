@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Appointment extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'online_store_id',
@@ -20,6 +21,8 @@ class Appointment extends Model
         'discount_code_id',
         'discount_amount_applied',
     ];
+
+    protected $dates = ['deleted_at'];
 
     public function user()
     {
@@ -59,5 +62,10 @@ class Appointment extends Model
     public function discountCode()
     {
         return $this->belongsTo(DiscountCode::class);
+    }
+
+    public function teamAssignments()
+    {
+        return $this->hasMany(AppointmentTeamAssignment::class);
     }
 }

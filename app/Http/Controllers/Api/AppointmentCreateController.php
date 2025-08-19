@@ -9,18 +9,20 @@ use App\Models\OnlineStore;
 use App\Models\Payment;
 use App\Models\StoreService;
 use App\Models\DiscountCode;
+use App\Models\AppointmentTeamAssignment;
+use App\Models\Team;
+use App\Mail\AppointmentConfirmation;
+use App\Mail\TeamAppointmentNotification;
 use Illuminate\Http\Request;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Checkout\Session;
-use Stripe\PaymentIntent;
 use Stripe\Stripe;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\User;
-use App\Mail\AppointmentConfirmation;
-use Illuminate\Support\Facades\Mail;
 
 class AppointmentCreateController extends Controller
 {
@@ -41,6 +43,7 @@ class AppointmentCreateController extends Controller
             'booking_notes' => 'required|string',
             'store_service_ids' => 'required|array|min:1',
             'store_service_ids.*' => 'exists:catalog_services,id',
+            'team_id' => 'nullable|exists:teams,id',
             'success_redirect_url' => 'nullable|url',
             'cancel_redirect_url' => 'nullable|url',
             'discount_code' => 'nullable|string',
@@ -52,9 +55,6 @@ class AppointmentCreateController extends Controller
                 return $this->error([], 'User not authenticated.', 401);
             }
 
-            /**
-             * === Prevent booking at same date and time ===
-             */
             $existingAppointment = Appointment::where('online_store_id', $request->online_store_id)
                 ->where('date', $request->date)
                 ->where('time', $request->time)
@@ -70,11 +70,17 @@ class AppointmentCreateController extends Controller
                 return $this->error([], 'No valid services found.', 400);
             }
 
+            if ($request->team_id) {
+                $team = Team::find($request->team_id);
+                if (!$team || !$team->catalogServices()->whereIn('catalog_services.id', $request->store_service_ids)->exists()) {
+                    return $this->error([], 'Selected team member is not available for the chosen services.', 400);
+                }
+            }
+
             $totalAmount = $services->sum('price');
             $discountAmount = 0;
             $discountCode = null;
 
-            // Validate and apply discount code if provided
             if ($request->discount_code) {
                 $discountCode = DiscountCode::where('online_store_id', $request->online_store_id)
                     ->where('code', $request->discount_code)
@@ -134,6 +140,7 @@ class AppointmentCreateController extends Controller
                     'time' => $request->time,
                     'booking_notes' => $request->booking_notes,
                     'store_service_ids' => implode(',', $request->store_service_ids),
+                    'team_id' => $request->team_id ?? null,
                     'success_redirect_url' => $request->get('success_redirect_url'),
                     'cancel_redirect_url' => $request->get('cancel_redirect_url'),
                     'discount_code_id' => $discountCode ? $discountCode->id : null,
@@ -166,6 +173,7 @@ class AppointmentCreateController extends Controller
 
             $userId = $metadata['user_id'];
             $storeServiceIds = explode(',', $metadata['store_service_ids']);
+            $teamId = $metadata['team_id'] ?? null;
             $totalAmount = (int) ($session->amount_total / 100);
             $discountCodeId = $metadata->discount_code_id ?? null;
             $discountAmount = $metadata->discount_amount_applied ?? 0;
@@ -179,12 +187,11 @@ class AppointmentCreateController extends Controller
                 'date' => $metadata['date'],
                 'time' => $metadata['time'],
                 'booking_notes' => $metadata['booking_notes'],
-                'status' => 'confirmed',
+                'status' => $teamId ? 'pending' : 'confirmed',
                 'discount_code_id' => $discountCodeId,
                 'discount_amount_applied' => $discountAmount,
             ]);
 
-            // Increment discount code usage if applied
             if ($discountCodeId) {
                 $discountCode = DiscountCode::find($discountCodeId);
                 if ($discountCode) {
@@ -223,7 +230,31 @@ class AppointmentCreateController extends Controller
                 'payment_intent_id' => $session->payment_intent,
             ]);
 
-            // Send appointment confirmation email
+            if ($teamId) {
+                $teamAssignment = AppointmentTeamAssignment::create([
+                    'appointment_id' => $appointment->id,
+                    'team_id' => $teamId,
+                    'team_member_status' => 'pending',
+                ]);
+
+                $team = Team::find($teamId);
+                $store = OnlineStore::find($metadata['online_store_id']);
+                try {
+                    Mail::to($team->email)->send(new TeamAppointmentNotification(
+                        $appointment,
+                        $team,
+                        $store,
+                        $services
+                    ));
+                } catch (\Exception $e) {
+                    Log::error('Failed to send team appointment notification email: ', [
+                        'error' => $e->getMessage(),
+                        'team_id' => $teamId,
+                        'appointment_id' => $appointment->id,
+                    ]);
+                }
+            }
+
             $user = User::findOrFail($userId);
             $store = OnlineStore::findOrFail($metadata['online_store_id']);
             try {
@@ -250,7 +281,6 @@ class AppointmentCreateController extends Controller
             DB::commit();
 
             return redirect($success_redirect_url);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 'Failed to complete appointment.', 500);
@@ -271,6 +301,40 @@ class AppointmentCreateController extends Controller
         $cancel_redirect_url = $metadata->cancel_redirect_url ?? null;
 
         return redirect($cancel_redirect_url);
+    }
+
+    public function teamAccept(Request $request, $appointment_id, $team_id)
+    {
+        $assignment = AppointmentTeamAssignment::where('appointment_id', $appointment_id)
+            ->where('team_id', $team_id)
+            ->where('team_member_status', 'pending')
+            ->first();
+
+        if (!$assignment) {
+            return $this->error([], 'Assignment not found or already processed.', 404);
+        }
+
+        $assignment->update(['team_member_status' => 'accepted']);
+        $assignment->appointment->update(['status' => 'confirmed']);
+
+        return $this->success([], 'Appointment accepted successfully.', 200);
+    }
+
+    public function teamDecline(Request $request, $appointment_id, $team_id)
+    {
+        $assignment = AppointmentTeamAssignment::where('appointment_id', $appointment_id)
+            ->where('team_id', $team_id)
+            ->where('team_member_status', 'pending')
+            ->first();
+
+        if (!$assignment) {
+            return $this->error([], 'Assignment not found or already processed.', 404);
+        }
+
+        $assignment->update(['team_member_status' => 'declined']);
+        $assignment->appointment->update(['status' => 'confirmed']);
+
+        return $this->success([], 'Appointment declined. It will be reassigned manually.', 200);
     }
 
     public function downloadInvoice($appointmentId)

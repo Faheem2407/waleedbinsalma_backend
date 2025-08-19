@@ -64,7 +64,8 @@ Route::controller(AppointmentCreateController::class)->prefix('online-store')->g
     Route::group(['middleware' => ['jwt.verify']], function () {
         Route::get('/appointments/{appointment_id}/invoice', 'downloadInvoice')->name('appointments.invoice.download');
     });
-
+    Route::get('/appointment/{appointment_id}/team/{team_id}/accept','teamAccept')->name('appointment.team.accept');
+    Route::get('/appointment/{appointment_id}/team/{team_id}/decline','teamDecline')->name('appointment.team.decline');
 });
 
 
