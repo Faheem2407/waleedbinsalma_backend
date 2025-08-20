@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Models\OnlineStore;
 use App\Models\User;
+use App\Models\AppointmentTeamAssignment;
+use App\Models\Team;
+use App\Mail\TeamAppointmentNotification;
+use Illuminate\Support\Facades\DB;
+
 
 class AppointmentController extends Controller
 {
@@ -63,6 +68,72 @@ class AppointmentController extends Controller
         return $this->success($data, 'Appointments fetched successfully.', 200);
     }
 
+    // public function rescheduleAppointment(Request $request, $id)
+    // {
+    //     $request->validate([
+    //         'date' => 'required|date|after_or_equal:today',
+    //         'time' => 'required|date_format:H:i',
+    //     ]);
+
+    //     $appointment = Appointment::where('id', $id)
+    //         ->where('user_id', Auth::id())
+    //         ->first();
+
+    //     if (!$appointment) {
+    //         return $this->error([], 'Appointment not found.', 404);
+    //     }
+
+    //     // Optional: Check if already cancelled or past
+    //     if ($appointment->status === 'cancelled') {
+    //         return $this->error([], 'Cannot reschedule a cancelled appointment.', 400);
+    //     }
+
+    //     // Check if the new slot is already booked
+    //     $existingAppointment = Appointment::where('online_store_id', $appointment->online_store_id)
+    //         ->where('date', $request->date)
+    //         ->where('time', $request->time)
+    //         ->where('status', 'confirmed')
+    //         ->where('id', '!=', $id)
+    //         ->first();
+
+    //     if ($existingAppointment) {
+    //         return $this->error([], 'This appointment slot is already booked.', 409);
+    //     }
+
+    //     $appointment->update([
+    //         'date' => $request->date,
+    //         'time' => $request->time,
+    //     ]);
+
+    //     // Send rescheduling confirmation email
+    //     try {
+    //         $user = User::findOrFail($appointment->user_id);
+    //         $store = OnlineStore::findOrFail($appointment->online_store_id);
+    //         $services = $appointment->storeServices->map(function ($storeService) {
+    //             return [
+    //                 'name' => $storeService->catalogService->name,
+    //                 'price' => $storeService->catalogService->price,
+    //             ];
+    //         })->toArray();
+    //         $totalAmount = $appointment->payments->isNotEmpty()
+    //             ? $appointment->payments->sum('amount')
+    //             : collect($services)->sum('price');
+
+    //         Mail::to($user->email)->send(new AppointmentConfirmation($user, $store, $appointment, $services, $totalAmount, true));
+    //     } catch (\Exception $e) {
+    //         Log::error('Failed to send rescheduling confirmation email: ', [
+    //             'error' => $e->getMessage(),
+    //             'user_id' => $appointment->user_id,
+    //             'appointment_id' => $appointment->id,
+    //         ]);
+    //     }
+
+    //     $data = $appointment->load('storeServices.catalogService');
+
+    //     return $this->success($data, 'Appointment rescheduled successfully.', 200);
+    // }
+
+
     public function rescheduleAppointment(Request $request, $id)
     {
         $request->validate([
@@ -78,7 +149,7 @@ class AppointmentController extends Controller
             return $this->error([], 'Appointment not found.', 404);
         }
 
-        // Optional: Check if already cancelled or past
+        // Check if already cancelled
         if ($appointment->status === 'cancelled') {
             return $this->error([], 'Cannot reschedule a cancelled appointment.', 400);
         }
@@ -95,13 +166,56 @@ class AppointmentController extends Controller
             return $this->error([], 'This appointment slot is already booked.', 409);
         }
 
-        $appointment->update([
-            'date' => $request->date,
-            'time' => $request->time,
-        ]);
+        DB::beginTransaction();
 
-        // Send rescheduling confirmation email
         try {
+            // Check if the appointment has a declined team assignment
+            $teamAssignment = AppointmentTeamAssignment::where('appointment_id', $appointment->id)
+                ->where('team_member_status', 'declined')
+                ->first();
+
+            $newTeamId = null;
+            if ($teamAssignment) {
+                // Find a new team member who can provide the services and is available
+                $storeServiceIds = $appointment->storeServices()->pluck('catalog_service_id')->toArray();
+                $newTeam = Team::whereNotIn('id', [$teamAssignment->team_id])
+                    ->whereHas('catalogServices', function ($query) use ($storeServiceIds) {
+                        $query->whereIn('catalog_services.id', $storeServiceIds);
+                    })
+                    ->whereDoesntHave('appointmentAssignments', function ($query) use ($request) {
+                        $query->where('team_member_status', 'accepted')
+                            ->whereHas('appointment', function ($subQuery) use ($request) {
+                                $subQuery->where('date', $request->date)
+                                    ->where('time', $request->time)
+                                    ->where('status', 'confirmed');
+                            });
+                    })
+                    ->first();
+
+                if (!$newTeam) {
+                    DB::rollBack();
+                    return $this->error([], 'No available team member found for the selected services and time slot.', 400);
+                }
+
+                // Update or create new team assignment
+                $newTeamId = $newTeam->id;
+                AppointmentTeamAssignment::create([
+                    'appointment_id' => $appointment->id,
+                    'team_id' => $newTeam->id,
+                    'team_member_status' => 'pending',
+                ]);
+
+                // $teamAssignment->update(['team_member_status' => 'inactive']);
+            }
+
+            // Update appointment details
+            $appointment->update([
+                'date' => $request->date,
+                'time' => $request->time,
+                'status' => $newTeamId ? 'pending' : 'confirmed', 
+            ]);
+
+            // Send rescheduling confirmation email to user
             $user = User::findOrFail($appointment->user_id);
             $store = OnlineStore::findOrFail($appointment->online_store_id);
             $services = $appointment->storeServices->map(function ($storeService) {
@@ -114,18 +228,44 @@ class AppointmentController extends Controller
                 ? $appointment->payments->sum('amount')
                 : collect($services)->sum('price');
 
-            Mail::to($user->email)->send(new AppointmentConfirmation($user, $store, $appointment, $services, $totalAmount, true));
+            try {
+                Mail::to($user->email)->send(new AppointmentConfirmation($user, $store, $appointment, $services, $totalAmount, true));
+            } catch (\Exception $e) {
+                Log::error('Failed to send rescheduling confirmation email: ', [
+                    'error' => $e->getMessage(),
+                    'user_id' => $appointment->user_id,
+                    'appointment_id' => $appointment->id,
+                ]);
+            }
+
+            // Send notification to new team member if assigned
+            if ($newTeamId) {
+                try {
+                    $newTeamMember = Team::findOrFail($newTeamId);
+                    Mail::to($newTeamMember->email)->send(new TeamAppointmentNotification(
+                        $appointment,
+                        $newTeamMember,
+                        $store,
+                        $services
+                    ));
+                } catch (\Exception $e) {
+                    Log::error('Failed to send team appointment notification email: ', [
+                        'error' => $e->getMessage(),
+                        'team_id' => $newTeamId,
+                        'appointment_id' => $appointment->id,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            $data = $appointment->load('storeServices.catalogService');
+
+            return $this->success($data, 'Appointment rescheduled successfully.', 200);
         } catch (\Exception $e) {
-            Log::error('Failed to send rescheduling confirmation email: ', [
-                'error' => $e->getMessage(),
-                'user_id' => $appointment->user_id,
-                'appointment_id' => $appointment->id,
-            ]);
+            DB::rollBack();
+            return $this->error($e->getMessage(), 'Failed to reschedule appointment.', 500);
         }
-
-        $data = $appointment->load('storeServices.catalogService');
-
-        return $this->success($data, 'Appointment rescheduled successfully.', 200);
     }
 
     public function cancelAppointment($id)

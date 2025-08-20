@@ -43,5 +43,10 @@ class Team extends Model
     {
         return $this->belongsToMany(CatalogService::class, 'catalog_service_teams');
     }
+
+    public function appointmentAssignments()
+    {
+        return $this->hasMany(AppointmentTeamAssignment::class, 'team_id');
+    }
 }
 
