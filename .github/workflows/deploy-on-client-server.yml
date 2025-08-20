@@ -17,7 +17,7 @@ jobs:
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
           server: ftp.softvencefsd.xyz
-          username: softvencefsd_waleedbinsalma@waleedbinsalma.softvencefsd.xyz
+          username: waleedbinsalma@waleedbinsalma.softvencefsd.xyz
           password: ${{ secrets.FTP_PASSWORD_SOFTVENCE }}
           
 
