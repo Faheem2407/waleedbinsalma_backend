@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('business_profile_id')->cascadeOnUpdate()
                 ->constrained('business_profiles')->cascadeOnDelete();
             $table->string('stripe_account_id')->nullable();
+            $table->string('tap_destination_id')->nullable()->comment('For Tap Pay');
             $table->enum('status', ['NotTry', 'Enabled', 'Rejected'])->default('NotTry');
             $table->timestamps();
         });

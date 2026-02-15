@@ -9,6 +9,7 @@ class BusinessBankDetails extends Model
     protected $fillable = [
         'business_profile_id',
         'stripe_account_id',
+        'tap_destination_id',
         'status',
     ];
 

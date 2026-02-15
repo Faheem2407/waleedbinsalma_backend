@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
 use Stripe\Account;
+use App\Models\User;
 use Stripe\AccountLink;
+use App\Traits\ApiResponse;
+use Illuminate\Http\Request;
+use App\Models\BusinessBankDetails;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Http;
 
 class ConnectAccountController extends Controller
 {
@@ -147,5 +149,73 @@ class ConnectAccountController extends Controller
         ]);
 
         return redirect($link->url);
+    }
+
+    public function onboardVendor(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user || !$user->businessProfile) {
+            return response()->json(['status' => false, 'message' => 'User or Business Profile not found.'], 404);
+        }
+
+        $businessProfile = $user->businessProfile;
+        try {
+            $payload = [
+                'name' => trim($businessProfile->business_name) ?: 'My Business',
+                'legal_name' => $businessProfile->legal_name ?? $businessProfile->business_name, // often required
+                'type' => 'CORPORATION',
+                'commercial_registration_no' => $businessProfile->commercial_registration_no ?? '1234567890', // ← required for SA
+                'contact_person' => [
+                    'first_name' => $user->first_name ?? 'Business',
+                    'last_name'  => $user->last_name ?? 'User',
+                    'email'      => $user->email,
+                    'phone'      => [
+                        'country_code' => '966',
+                        'number'       => ltrim($user->number ?? '138686959', '0'), // no leading zero
+                    ],
+                ],
+                'address'               => [  // ← very often required
+                    'line1'    => $businessProfile->address ?? 'Example Street 123',
+                    'city'     => $businessProfile->city ?? 'Riyadh',
+                    'state'    => $businessProfile->region ?? 'Riyadh Province',
+                    'country'  => 'SA',
+                    'zip'      => $businessProfile->postal_code ?? '11564',
+                ],
+                'settlement_currency' => 'SAR',  // instead of entities
+                // If you have uploaded documents earlier, reference them:
+                // 'documents' => ['commercial_registration' => 'file_id_from_upload'],
+            ];
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . config('services.tap_pay.private_key'),
+                'Accept'        => 'application/json',
+                'Content-Type'  => 'application/json',
+            ])->post('https://api.tap.company/v2/business', $payload);
+
+            Log::info('Tap Business Request', ['body' => $payload]);
+            Log::info('Tap Business Response', ['body' => $response->json(), 'status' => $response->status()]);
+
+            $result = $response->json();
+
+            log::info('Tap Business Result', ['result' => $result]);
+
+            if ($response->successful() && isset($result['id'])) {
+                BusinessBankDetails::updateOrCreate(
+                    ['business_profile_id' => $businessProfile->id],
+                    [
+                        'tap_destination_id' => $result['id'],
+                        'status' => $result['status'] === 'ACTIVE' ? 'Enabled' : 'Pending',
+                    ]
+                );
+
+                return $this->success(['tap_destination_id' => $result['id']], 'Vendor onboarded successfully.', 200);
+            }
+
+            return $this->error([], 'Failed to onboard vendor: ' . ($result['message'] ?? 'Unknown error'), $response->status());
+        } catch (\Exception $e) {
+            Log::error('Tap Onboarding Exception', ['error' => $e->getMessage()]);
+            return $this->error([], 'Failed to onboard vendor: ' . $e->getMessage(), 500);
+        }
     }
 }

@@ -40,5 +40,12 @@ return [
         'public' => env('STRIPE_PUBLIC'),
     ],
 
+    'tap_pay' => [
+        'public_key' => env('TAP_PUBLIC_KEY_PATH'),
+        'private_key' => env('TAP_PRIVATE_KEY_PATH'),
+        'environment' => env('TAP_ENVIRONMENT'),
+        'merchant_id' => env('TAP_MERCHANT_ID'),
+    ],
+
 
 ];

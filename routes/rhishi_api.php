@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['jwt.verify'])->group(function () {
     Route::controller(ConnectAccountController::class)->prefix('stripe/account')->group(function () {
         Route::post('/connect', 'connectAccount');
+        // Route::get('/onboard-vendor', 'onboardVendor');
+    });
+
+    Route::controller(ConnectAccountController::class)->group(function () {
+        Route::get('/onboard-vendor', 'onboardVendor');
     });
 
     Route::controller(ProductPurchaseController::class)->group(function () {
